@@ -207,7 +207,13 @@ export default {
         studentMap[record.name].sessions++;
         
         // Keep track of the latest stage
-        if (record.stage > studentMap[record.name].currentStage) {
+        // For numeric stages, compare numerically; for string stages (Surah names), use the most recent
+        if (typeof record.stage === 'number' && typeof studentMap[record.name].currentStage === 'number') {
+          if (record.stage > studentMap[record.name].currentStage) {
+            studentMap[record.name].currentStage = record.stage;
+          }
+        } else {
+          // For Surah names or mixed types, just use the most recent entry
           studentMap[record.name].currentStage = record.stage;
         }
       });
@@ -247,11 +253,17 @@ export default {
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
         if (values.length >= 4) {
+          // Handle stage: if it's a number, parse it; if it's a string (Surah name), keep as string
+          let stage = values[3];
+          if (!isNaN(stage)) {
+            stage = parseInt(stage) || 1;
+          }
+          
           this.students.push({
             name: values[0],
             date: values[1],
             type: values[2],
-            stage: parseInt(values[3]) || 1,
+            stage: stage,
             pages: parseInt(values[4]) || 0
           });
         }
@@ -275,7 +287,10 @@ export default {
       if (type === 'Iqra') {
         return `Tahap ${stage}`;
       } else if (type === 'Quran') {
-        return stage === 1 ? 'Juzuk 1-30' : 'Juzuk 30';
+        if (stage === 1) return 'Juzuk 1-30';
+        // If stage is a Surah name (string), return it as is
+        if (isNaN(stage)) return `Surah ${stage}`;
+        return 'Juzuk 30';
       }
       return '';
     },
@@ -283,7 +298,10 @@ export default {
       if (type === 'Iqra') {
         return `I${stage}`;
       } else if (type === 'Quran') {
-        return stage === 1 ? 'Q1-30' : 'Q30';
+        if (stage === 1) return 'Q1-30';
+        // If stage is a Surah name, return first 3 characters
+        if (isNaN(stage)) return stage.substring(0, 3);
+        return 'Q30';
       }
       return '';
     },
