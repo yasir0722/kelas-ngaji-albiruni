@@ -9,7 +9,7 @@
     <div class="admin-container">
       <div class="upload-section">
         <h3>📤 Upload File CSV Baru</h3>
-        <p>Upload file CSV dengan format: <code>name,date,type,pages</code></p>
+        <p>Upload file CSV dengan format: <code>name,date,type,stage,pages</code></p>
         
         <div class="upload-area">
           <input 
@@ -32,8 +32,9 @@
               <thead>
                 <tr>
                   <th>Nama</th>
-                  <th>Tanggal</th>
-                  <th>Kehadiran</th>
+                  <th>Tarikh</th>
+                  <th>Jenis</th>
+                  <th>Tahap</th>
                   <th>Halaman</th>
                 </tr>
               </thead>
@@ -46,6 +47,7 @@
                       {{ record.type }}
                     </span>
                   </td>
+                  <td>{{ record.stage || '-' }}</td>
                   <td>{{ record.pages || '-' }}</td>
                 </tr>
               </tbody>
@@ -103,7 +105,7 @@
         <h3>📄 Format CSV yang Diperlukan</h3>
         <div class="format-example">
           <code>
-name,date,type,pages<br>
+name,date,type,stage,pages<br>
 Ahmad Zaki,2025-08-01,Hadir,15<br>
 Fatimah Sari,2025-08-01,Tidak Hadir,<br>
 Muhammad Ali,2025-08-01,Terlambat,8
@@ -120,6 +122,106 @@ Muhammad Ali,2025-08-01,Terlambat,8
           </ul>
         </div>
       </div>
+
+      <!-- New Manual Entry Form Section -->
+      <div class="manual-entry-section">
+        <h3>✏️ Tambah Data Kehadiran Manual</h3>
+        <form @submit.prevent="addAttendanceRecord" class="attendance-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="studentName">Nama Pelajar:</label>
+              <input 
+                type="text" 
+                id="studentName"
+                v-model="newRecord.name" 
+                required
+                placeholder="Masukkan nama pelajar"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="attendanceDate">Tarikh:</label>
+              <input 
+                type="date" 
+                id="attendanceDate"
+                v-model="newRecord.date" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="studyType">Jenis Pembelajaran:</label>
+              <select 
+                id="studyType"
+                v-model="newRecord.type" 
+                @change="onTypeChange"
+                required
+              >
+                <option value="">Pilih jenis</option>
+                <option value="Iqra">Iqra</option>
+                <option value="Quran">Quran</option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="newRecord.type === 'Iqra'">
+              <label for="iqraStage">Tahap Iqra:</label>
+              <select id="iqraStage" v-model="newRecord.stage" required>
+                <option value="">Pilih tahap</option>
+                <option v-for="stage in [1,2,3,4,5,6]" :key="stage" :value="stage">
+                  Tahap {{ stage }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="newRecord.type === 'Quran'">
+              <label for="quranStage">Tahap Quran:</label>
+              <select 
+                id="quranStage" 
+                v-model="newRecord.stage" 
+                @change="onQuranStageChange"
+                required
+              >
+                <option value="">Pilih tahap</option>
+                <option value="1">Juzuk 1-30 (Penuh)</option>
+                <option value="surah">Surah Pendek (Juzuk 30)</option>
+              </select>
+            </div>
+
+            <div class="form-group" v-if="newRecord.type === 'Quran' && newRecord.stage === 'surah'">
+              <label for="surahName">Nama Surah:</label>
+              <select id="surahName" v-model="newRecord.surahName" required>
+                <option value="">Pilih surah</option>
+                <option v-for="surah in surahList" :key="surah.name" :value="surah.name">
+                  {{ surah.number }}. {{ surah.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="pages">Bilangan Halaman:</label>
+              <input 
+                type="number" 
+                id="pages"
+                v-model.number="newRecord.pages" 
+                min="1"
+                required
+                placeholder="0"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn" :disabled="!isFormValid">
+              ➕ Tambah Rekod
+            </button>
+            <button type="button" @click="resetForm" class="reset-btn">
+              🔄 Reset
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -129,7 +231,73 @@ export default {
   name: 'AdminView',
   data() {
     return {
-      uploadedData: []
+      uploadedData: [],
+      newRecord: {
+        name: '',
+        date: '',
+        type: '',
+        stage: '',
+        surahName: '',
+        pages: null
+      },
+      surahList: [
+        {number: 78, name: 'Al-Naba', pages: 40},
+        {number: 79, name: 'Al-Nazaat', pages: 46},
+        {number: 80, name: 'Abasa', pages: 42},
+        {number: 81, name: 'At-Takwir', pages: 29},
+        {number: 82, name: 'Al-Infitar', pages: 19},
+        {number: 83, name: 'Al-Mutaffifin', pages: 36},
+        {number: 84, name: 'Al-Inshiqaq', pages: 25},
+        {number: 85, name: 'Al-Burooj', pages: 22},
+        {number: 86, name: 'At-Tariq', pages: 17},
+        {number: 87, name: 'Al-Ala', pages: 19},
+        {number: 88, name: 'Al-Ghashiya', pages: 26},
+        {number: 89, name: 'Al-Fajr', pages: 30},
+        {number: 90, name: 'Al-Balad', pages: 20},
+        {number: 91, name: 'Ash-Shams', pages: 15},
+        {number: 92, name: 'Al-Lail', pages: 21},
+        {number: 93, name: 'Ad-Dhuha', pages: 11},
+        {number: 94, name: 'Al-Sharh', pages: 8},
+        {number: 95, name: 'At-Tin', pages: 8},
+        {number: 96, name: 'Al-Alaq', pages: 19},
+        {number: 97, name: 'Al-Qadr', pages: 5},
+        {number: 98, name: 'Al-Bayyina', pages: 8},
+        {number: 99, name: 'Al-Zalzala', pages: 8},
+        {number: 100, name: 'Al-Adiyat', pages: 11},
+        {number: 101, name: 'Al-Qaria', pages: 11},
+        {number: 102, name: 'At-Takathur', pages: 8},
+        {number: 103, name: 'Al-Asr', pages: 3},
+        {number: 104, name: 'Al-Humaza', pages: 9},
+        {number: 105, name: 'Al-Fil', pages: 5},
+        {number: 106, name: 'Quraish', pages: 4},
+        {number: 107, name: 'Al-Maun', pages: 7},
+        {number: 108, name: 'Al-Kauther', pages: 3},
+        {number: 109, name: 'Al-Kafiroon', pages: 6},
+        {number: 110, name: 'An-Nasr', pages: 3},
+        {number: 111, name: 'Al-Masadd', pages: 5},
+        {number: 112, name: 'Al-Ikhlas', pages: 4},
+        {number: 113, name: 'Al-Falaq', pages: 5},
+        {number: 114, name: 'An-Nas', pages: 6}
+      ]
+    }
+  },
+  computed: {
+    isFormValid() {
+      const baseValid = this.newRecord.name && this.newRecord.date && this.newRecord.type && this.newRecord.pages;
+      
+      if (!baseValid) return false;
+      
+      // For Iqra and Quran stage 1, just need stage number
+      if (this.newRecord.type === 'Iqra' || (this.newRecord.type === 'Quran' && this.newRecord.stage === '1')) {
+        return !!this.newRecord.stage;
+      }
+      
+      // For Quran Surahs, need both stage='surah' and surahName
+      if (this.newRecord.type === 'Quran' && this.newRecord.stage === 'surah') {
+        return !!this.newRecord.surahName;
+      }
+      
+      return !!this.newRecord.stage;
     }
   },
   methods: {
@@ -151,12 +319,19 @@ export default {
       
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
-        if (values.length >= 3) {
+        if (values.length >= 4) {
+          // Handle stage: if it's a number, parse it; if it's a string (Surah name), keep as string
+          let stage = values[3];
+          if (!isNaN(stage)) {
+            stage = parseInt(stage) || 1;
+          }
+          
           this.uploadedData.push({
             name: values[0],
             date: values[1],
             type: values[2],
-            pages: values[3] || ''
+            stage: stage,
+            pages: values[4] || ''
           });
         }
       }
@@ -167,10 +342,10 @@ export default {
     downloadCSV() {
       if (this.uploadedData.length === 0) return;
       
-      let csvContent = 'name,date,type,pages\n';
+      let csvContent = 'name,date,type,stage,pages\n';
       
       this.uploadedData.forEach(record => {
-        csvContent += `${record.name},${record.date},${record.type},${record.pages}\n`;
+        csvContent += `${record.name},${record.date},${record.type},${record.stage},${record.pages}\n`;
       });
       
       const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -188,10 +363,60 @@ export default {
       this.$refs.fileInput.value = '';
     },
     getStatusClass(type) {
-      if (type === 'Hadir') return 'present';
-      if (type === 'Tidak Hadir') return 'absent';
-      if (type === 'Terlambat') return 'late';
+      if (type === 'Iqra') return 'iqra';
+      if (type === 'Quran') return 'quran';
       return '';
+    },
+    onTypeChange() {
+      // Reset stage and surah when type changes
+      this.newRecord.stage = '';
+      this.newRecord.surahName = '';
+    },
+    onQuranStageChange() {
+      // Reset surah name when Quran stage changes
+      if (this.newRecord.stage !== 'surah') {
+        this.newRecord.surahName = '';
+      }
+    },
+    addAttendanceRecord() {
+      if (!this.isFormValid) return;
+      
+      // Determine the final stage value
+      let finalStage = this.newRecord.stage;
+      if (this.newRecord.type === 'Quran' && this.newRecord.stage === 'surah') {
+        finalStage = this.newRecord.surahName;
+      }
+      
+      // Create the new record
+      const newRecord = {
+        name: this.newRecord.name,
+        date: this.newRecord.date,
+        type: this.newRecord.type,
+        stage: finalStage,
+        pages: this.newRecord.pages
+      };
+      
+      // Add to uploaded data
+      this.uploadedData.push(newRecord);
+      
+      // Sort by date
+      this.uploadedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Reset form
+      this.resetForm();
+      
+      // Show success message (you could add a toast notification here)
+      alert('Rekod kehadiran berjaya ditambah!');
+    },
+    resetForm() {
+      this.newRecord = {
+        name: '',
+        date: '',
+        type: '',
+        stage: '',
+        surahName: '',
+        pages: null
+      };
     }
   }
 }
@@ -247,14 +472,14 @@ export default {
   gap: 30px;
 }
 
-.upload-section, .instructions-section, .csv-format-section {
+.upload-section, .instructions-section, .csv-format-section, .manual-entry-section {
   background: rgba(255,255,255,0.1);
   border-radius: 12px;
   padding: 30px;
   backdrop-filter: blur(10px);
 }
 
-.upload-section h3, .instructions-section h3, .csv-format-section h3 {
+.upload-section h3, .instructions-section h3, .csv-format-section h3, .manual-entry-section h3 {
   margin-top: 0;
   font-size: 1.3rem;
   margin-bottom: 20px;
@@ -447,6 +672,86 @@ th {
   line-height: 1.4;
 }
 
+.manual-entry-section {
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.attendance-form {
+  display: grid;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 250px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  color: white;
+  font-size: 14px;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus {
+  border-color: rgba(76,175,80,1);
+  outline: none;
+}
+
+.submit-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(76,175,80,0.3);
+  color: white;
+}
+
+.submit-btn:hover {
+  background: rgba(76,175,80,0.5);
+}
+
+.reset-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(244,67,54,0.3);
+  color: white;
+}
+
+.reset-btn:hover {
+  background: rgba(244,67,54,0.5);
+}
+
 @media (max-width: 768px) {
   .admin-app {
     padding: 15px;
@@ -462,6 +767,127 @@ th {
   
   th, td {
     padding: 8px 10px;
+  }
+}
+
+/* Manual Entry Form Styles */
+.manual-entry-section {
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.manual-entry-section h3 {
+  margin-top: 0;
+  color: #4CAF50;
+  font-size: 1.5rem;
+}
+
+.attendance-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 12px 16px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  background: rgba(255,255,255,0.15);
+}
+
+.form-group input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.form-group select option {
+  background: #2c3e50;
+  color: white;
+}
+
+.form-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+.submit-btn,
+.reset-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  background: rgba(255,255,255,0.2);
+  cursor: not-allowed;
+  color: rgba(255,255,255,0.5);
+}
+
+.reset-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.reset-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    flex-direction: column;
   }
 }
 </style>
