@@ -2,7 +2,7 @@
   <div class="parent-app">
     <header class="header">
       <h1>🕌 Kelas Ngaji Albiruni</h1>
-      <h2>📊 Kehadiran Santri</h2>
+      <h2>📊 Kehadiran Pelajar</h2>
     </header>
 
     <div class="loading" v-if="isLoading">
@@ -42,7 +42,7 @@
             <div class="date-number">{{ date.day }}</div>
             <div v-if="date.attendanceData.length > 0" class="attendance-summary">
               <div class="attendance-count">
-                {{ date.attendanceData.length }} santri
+                {{ date.attendanceData.length }} pelajar
               </div>
               <div class="attendance-details">
                 <div 
@@ -84,7 +84,7 @@
         </div>
 
         <div class="student-list">
-          <h4>👥 Kehadiran Santri Bulan Ini</h4>
+          <h4>👥 Kehadiran Pelajar Bulan Ini</h4>
           <div class="student-grid">
             <div 
               v-for="student in uniqueStudentsThisMonth" 
