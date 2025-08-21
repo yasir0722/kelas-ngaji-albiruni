@@ -148,7 +148,11 @@ export default {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
         
-        const dateString = date.toISOString().split('T')[0];
+        // Format date as YYYY-MM-DD in local timezone to match CSV format
+        const dateYear = date.getFullYear();
+        const dateMonth = String(date.getMonth() + 1).padStart(2, '0');
+        const dateDay = String(date.getDate()).padStart(2, '0');
+        const dateString = `${dateYear}-${dateMonth}-${dateDay}`;
         const attendanceData = this.students.filter(s => s.date === dateString);
         
         dates.push({
@@ -229,13 +233,13 @@ export default {
         
         // Load the attendance data from the sample CSV file
         const response = await fetch('./sample-attendance.csv');
-        console.log('Loading attendance data from:', response.url);
         if (!response.ok) {
           throw new Error('Gagal memuat data kehadiran');
         }
         
         const csvContent = await response.text();
         this.parseCSV(csvContent);
+        console.log('Attendance data loaded successfully:', this.students);
         
       } catch (err) {
         this.error = 'Gagal memuat data kehadiran. Pastikan file CSV tersedia.';
