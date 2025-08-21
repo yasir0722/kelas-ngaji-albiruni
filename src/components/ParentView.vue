@@ -64,7 +64,7 @@
                     :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                     :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                   >
-                    {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage) }}
+                    {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage, record.pages) }}
                   </div>
                   
                   <!-- Absent students -->
@@ -97,7 +97,7 @@
                   :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                   :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                 >
-                  {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage) }}
+                  {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage, record.pages) }}
                 </div>
                 <div v-if="date.attendanceData.length > 5" class="more-indicator">
                   +{{ date.attendanceData.length - 5 }} lagi
@@ -388,14 +388,20 @@ export default {
       }
       return '';
     },
-    getShortStageText(type, stage) {
+    getShortStageText(type, stage, pages = 0) {
       if (type === 'Iqra') {
-        return `I${stage}`;
+        return pages > 0 ? `I${stage} - ${pages}` : `I${stage}`;
       } else if (type === 'Quran') {
-        if (stage === 1) return 'Q1-30';
-        // If stage is a Surah name, return first 3 characters
-        if (isNaN(stage)) return stage.substring(0, 3);
-        return 'Q30';
+        if (stage === 1) {
+          // Stage 1 = Juz 1-30, show page number
+          return pages > 0 ? `Q1 - ${pages}` : 'Q1';
+        } else {
+          // Stage 2 = Surah names, show surah name (not pages)
+          if (isNaN(stage)) {
+            return `Q2 - ${stage}`;
+          }
+          return pages > 0 ? `Q30 - ${pages}` : 'Q30';
+        }
       }
       return '';
     },
