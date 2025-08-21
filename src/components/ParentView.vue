@@ -44,13 +44,14 @@
             
             <!-- Class day logic -->
             <div v-if="date.isClassDay" class="class-info">
-              <!-- No attendance records - class canceled -->
-              <div v-if="date.attendanceData.length === 0" class="class-status canceled">
+              <!-- No attendance records - class canceled (only for past dates) -->
+              <div v-if="date.attendanceData.length === 0 && date.date <= new Date()" class="class-status canceled">
                 <div class="status-text">Kelas Dibatalkan</div>
+                <div class="status-text">/ Tiada Rekod</div>
               </div>
               
               <!-- Has attendance records - show present and absent -->
-              <div v-else class="attendance-summary">
+              <div v-else-if="date.attendanceData.length > 0" class="attendance-summary">
                 <div class="attendance-count">
                   {{ date.attendanceData.length }}/{{ registeredStudents.length }} hadir
                 </div>
