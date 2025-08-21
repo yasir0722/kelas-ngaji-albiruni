@@ -217,7 +217,7 @@ export default {
         this.error = null;
         
         // Load the attendance data from the sample CSV file
-        const response = await fetch('/kelas-ngaji-albiruni/sample-attendance.csv');
+        const response = await fetch('./sample-attendance.csv');
         if (!response.ok) {
           throw new Error('Gagal memuat data kehadiran');
         }
