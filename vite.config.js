@@ -4,10 +4,11 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  base: '/kelas-ngaji-albiruni/',
+  base: '/kelas-ngaji-albiruni/', // Keep this for GitHub Pages subdirectory
   build: {
-    outDir: 'dist',
+    outDir: 'docs', // GitHub Pages can serve from /docs folder on main branch
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    emptyOutDir: true
   }
 })
