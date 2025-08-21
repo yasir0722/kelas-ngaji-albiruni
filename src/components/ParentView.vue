@@ -49,9 +49,9 @@
                   v-for="record in date.attendanceData.slice(0, 3)" 
                   :key="record.name"
                   :class="['attendance-item', getAttendanceTypeClass(record.type)]"
-                  :title="`${record.name}: ${record.type}${record.pages ? ' (' + record.pages + ' halaman)' : ''}`"
+                  :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                 >
-                  {{ record.name.split(' ')[0] }}
+                  {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage) }}
                 </div>
                 <div v-if="date.attendanceData.length > 3" class="more-indicator">
                   +{{ date.attendanceData.length - 3 }} lagi
@@ -69,17 +69,13 @@
             <h4>Total Kehadiran</h4>
             <p class="stat-number">{{ monthlyStats.total }}</p>
           </div>
-          <div class="stat-card present">
-            <h4>Hadir</h4>
-            <p class="stat-number">{{ monthlyStats.hadir }}</p>
+          <div class="stat-card iqra">
+            <h4>Iqra</h4>
+            <p class="stat-number">{{ monthlyStats.iqra }}</p>
           </div>
-          <div class="stat-card absent">
-            <h4>Tidak Hadir</h4>
-            <p class="stat-number">{{ monthlyStats.tidakHadir }}</p>
-          </div>
-          <div class="stat-card late">
-            <h4>Terlambat</h4>
-            <p class="stat-number">{{ monthlyStats.terlambat }}</p>
+          <div class="stat-card quran">
+            <h4>Quran</h4>
+            <p class="stat-number">{{ monthlyStats.quran }}</p>
           </div>
         </div>
 
@@ -93,9 +89,11 @@
             >
               <div class="student-name">{{ student.name }}</div>
               <div class="student-stats">
-                <span class="stat present">{{ student.hadir }}</span>
-                <span class="stat absent">{{ student.tidakHadir }}</span>
-                <span class="stat late">{{ student.terlambat }}</span>
+                <div class="student-progress">
+                  <span class="stat-type">{{ student.type }}</span>
+                  <span class="stat-stage">{{ getStageText(student.type, student.currentStage) }}</span>
+                  <span class="stat-pages">{{ student.totalPages }} halaman</span>
+                </div>
               </div>
             </div>
           </div>
@@ -178,9 +176,8 @@ export default {
       
       return {
         total: monthlyData.length,
-        hadir: monthlyData.filter(s => s.type === 'Hadir').length,
-        tidakHadir: monthlyData.filter(s => s.type === 'Tidak Hadir').length,
-        terlambat: monthlyData.filter(s => s.type === 'Terlambat').length
+        iqra: monthlyData.filter(s => s.type === 'Iqra').length,
+        quran: monthlyData.filter(s => s.type === 'Quran').length
       };
     },
     uniqueStudentsThisMonth() {
@@ -199,15 +196,20 @@ export default {
         if (!studentMap[record.name]) {
           studentMap[record.name] = {
             name: record.name,
-            hadir: 0,
-            tidakHadir: 0,
-            terlambat: 0
+            type: record.type,
+            currentStage: record.stage,
+            totalPages: 0,
+            sessions: 0
           };
         }
         
-        if (record.type === 'Hadir') studentMap[record.name].hadir++;
-        else if (record.type === 'Tidak Hadir') studentMap[record.name].tidakHadir++;
-        else if (record.type === 'Terlambat') studentMap[record.name].terlambat++;
+        studentMap[record.name].totalPages += parseInt(record.pages) || 0;
+        studentMap[record.name].sessions++;
+        
+        // Keep track of the latest stage
+        if (record.stage > studentMap[record.name].currentStage) {
+          studentMap[record.name].currentStage = record.stage;
+        }
       });
       
       return Object.values(studentMap).sort((a, b) => a.name.localeCompare(b.name));
@@ -221,6 +223,7 @@ export default {
         
         // Load the attendance data from the sample CSV file
         const response = await fetch('./sample-attendance.csv');
+        console.log('Loading attendance data from:', response.url);
         if (!response.ok) {
           throw new Error('Gagal memuat data kehadiran');
         }
@@ -243,12 +246,13 @@ export default {
       
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
-        if (values.length >= 3) {
+        if (values.length >= 4) {
           this.students.push({
             name: values[0],
             date: values[1],
             type: values[2],
-            pages: values[3] || ''
+            stage: parseInt(values[3]) || 1,
+            pages: parseInt(values[4]) || 0
           });
         }
       }
@@ -263,10 +267,39 @@ export default {
       this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
     },
     getAttendanceTypeClass(type) {
-      if (type === 'Hadir') return 'present';
-      if (type === 'Tidak Hadir') return 'absent';
-      if (type === 'Terlambat') return 'late';
+      if (type === 'Iqra') return 'iqra';
+      if (type === 'Quran') return 'quran';
       return '';
+    },
+    getStageText(type, stage) {
+      if (type === 'Iqra') {
+        return `Tahap ${stage}`;
+      } else if (type === 'Quran') {
+        return stage === 1 ? 'Juzuk 1-30' : 'Juzuk 30';
+      }
+      return '';
+    },
+    getShortStageText(type, stage) {
+      if (type === 'Iqra') {
+        return `I${stage}`;
+      } else if (type === 'Quran') {
+        return stage === 1 ? 'Q1-30' : 'Q30';
+      }
+      return '';
+    },
+    updateStatTypeStyles() {
+      this.$nextTick(() => {
+        const statTypes = document.querySelectorAll('.stat-type');
+        statTypes.forEach(element => {
+          if (element.textContent.includes('Iqra')) {
+            element.style.background = 'rgba(76,175,80,0.3)';
+            element.style.color = '#4CAF50';
+          } else if (element.textContent.includes('Quran')) {
+            element.style.background = 'rgba(33,150,243,0.3)';
+            element.style.color = '#2196F3';
+          }
+        });
+      });
     }
   }
 }
@@ -437,16 +470,14 @@ export default {
   white-space: nowrap;
 }
 
-.attendance-item.present {
+.attendance-item.iqra {
   background: rgba(76,175,80,0.3);
+  border-left: 3px solid #4CAF50;
 }
 
-.attendance-item.absent {
-  background: rgba(244,67,54,0.3);
-}
-
-.attendance-item.late {
-  background: rgba(255,152,0,0.3);
+.attendance-item.quran {
+  background: rgba(33,150,243,0.3);
+  border-left: 3px solid #2196F3;
 }
 
 .more-indicator {
@@ -483,16 +514,14 @@ export default {
   text-align: center;
 }
 
-.stat-card.present {
+.stat-card.iqra {
   background: rgba(76,175,80,0.2);
+  border-left: 4px solid #4CAF50;
 }
 
-.stat-card.absent {
-  background: rgba(244,67,54,0.2);
-}
-
-.stat-card.late {
-  background: rgba(255,152,0,0.2);
+.stat-card.quran {
+  background: rgba(33,150,243,0.2);
+  border-left: 4px solid #2196F3;
 }
 
 .stat-card h4 {
@@ -533,23 +562,33 @@ export default {
   gap: 10px;
 }
 
-.stat {
+.student-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-type {
+  font-weight: bold;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
-  font-weight: bold;
+  text-align: center;
 }
 
-.stat.present {
-  background: rgba(76,175,80,0.3);
+.student-card .stat-type {
+  background: rgba(255,255,255,0.2);
+  color: white;
 }
 
-.stat.absent {
-  background: rgba(244,67,54,0.3);
+.stat-stage {
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
 }
 
-.stat.late {
-  background: rgba(255,152,0,0.3);
+.stat-pages {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
 }
 
 .admin-link {
