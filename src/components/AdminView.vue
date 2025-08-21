@@ -7,7 +7,7 @@
     </header>
 
     <div class="admin-container">
-      <div class="upload-section">
+      <!-- <div class="upload-section">
         <h3>📤 Upload File CSV Baru</h3>
         <p>Upload file CSV dengan format: <code>name,date,type,stage,pages</code></p>
         
@@ -69,39 +69,45 @@
       </div>
 
       <div class="instructions-section">
-        <h3>📋 Petunjuk Penggunaan</h3>
-        <div class="instructions">
+        <div class="instructions-header" @click="toggleInstructions">
+          <h3>📋 Petunjuk Penggunaan</h3>
+          <button class="toggle-btn" :class="{ expanded: showInstructions }">
+        {{ showInstructions ? '▼' : '▶' }}
+          </button>
+        </div>
+        
+        <div v-show="showInstructions" class="instructions">
           <div class="step">
-            <h4>1. 📤 Upload File CSV</h4>
-            <p>Upload file CSV dengan format yang benar. File akan ditampilkan dalam preview.</p>
+        <h4>1. 📤 Upload File CSV</h4>
+        <p>Upload file CSV dengan format yang benar. File akan ditampilkan dalam preview.</p>
           </div>
           
           <div class="step">
-            <h4>2. 💾 Download File untuk Git</h4>
-            <p>Setelah puas dengan data, klik "Download CSV untuk Git" untuk mendapatkan file yang siap di-commit.</p>
+        <h4>2. 💾 Download File untuk Git</h4>
+        <p>Setelah puas dengan data, klik "Download CSV untuk Git" untuk mendapatkan file yang siap di-commit.</p>
           </div>
           
           <div class="step">
-            <h4>3. 🔄 Update Repository</h4>
-            <p>
-              Ganti file <code>sample-attendance.csv</code> di repository dengan file yang baru di-download, 
-              lalu commit dan push ke GitHub:
-            </p>
-            <code class="command">
-              git add sample-attendance.csv<br>
-              git commit -m "Update attendance data"<br>
-              git push origin main
-            </code>
+        <h4>3. 🔄 Update Repository</h4>
+        <p>
+          Ganti file <code>sample-attendance.csv</code> di repository dengan file yang baru di-download, 
+          lalu commit dan push ke GitHub:
+        </p>
+        <code class="command">
+          git add sample-attendance.csv<br>
+          git commit -m "Update attendance data"<br>
+          git push origin main
+        </code>
           </div>
           
           <div class="step">
-            <h4>4. ✅ Selesai</h4>
-            <p>Data kehadiran akan otomatis terupdate di halaman parent dalam beberapa menit.</p>
+        <h4>4. ✅ Selesai</h4>
+        <p>Data kehadiran akan otomatis terupdate di halaman parent dalam beberapa menit.</p>
           </div>
         </div>
-      </div>
+      </div> -->
 
-      <div class="csv-format-section">
+      <!-- <div class="csv-format-section">
         <h3>📄 Format CSV yang Diperlukan</h3>
         <div class="format-example">
           <code>
@@ -121,6 +127,105 @@ Muhammad Ali,2025-08-01,Terlambat,8
             <li><strong>pages</strong>: Jumlah halaman yang dibaca (boleh kosong)</li>
           </ul>
         </div>
+      </div> -->
+
+      <!-- Student List Management Section -->
+      <div class="student-list-section">
+        <h3>👥 Kelola Senarai Pelajar</h3>
+        
+        <div class="student-form">
+          <h4>➕ Tambah Pelajar Baru</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="newStudentName">Nama Pelajar:</label>
+              <input 
+                type="text" 
+                id="newStudentName"
+                v-model="newStudent.name" 
+                required
+                placeholder="Masukkan nama pelajar"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="newStudentType">Jenis Pembelajaran:</label>
+              <select 
+                id="newStudentType"
+                v-model="newStudent.type" 
+                @change="onNewStudentTypeChange"
+                required
+              >
+                <option value="">Pilih jenis</option>
+                <option value="iqra">Iqra</option>
+                <option value="quran">Quran</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="newStudentStage">Tahap:</label>
+              <select 
+                id="newStudentStage"
+                v-model="newStudent.stage" 
+                :disabled="!newStudent.type"
+                required
+              >
+                <option value="">Pilih tahap</option>
+                <option v-if="newStudent.type === 'iqra'" v-for="stage in [1,2,3,4,5,6]" :key="stage" :value="stage">
+                  Tahap {{ stage }}
+                </option>
+                <option v-if="newStudent.type === 'quran'" value="1">Stage 1</option>
+                <option v-if="newStudent.type === 'quran'" value="2">Stage 2</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="addStudent" class="submit-btn">
+              ➕ Tambah Pelajar
+            </button>
+          </div>
+        </div>
+
+        <div v-if="studentList.length > 0" class="student-list-preview">
+          <h4>📋 Senarai Pelajar ({{ studentList.length }} orang):</h4>
+          <div class="student-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Jenis</th>
+                  <th>Tahap</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(student, index) in studentList" :key="index">
+                  <td>{{ student.name }}</td>
+                  <td>
+                    <span :class="['status-badge', student.type === 'iqra' ? 'iqra' : 'quran']">
+                      {{ student.type }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="student.type === 'iqra'">Tahap {{ student.stage }}</span>
+                    <span v-else>Stage {{ student.stage }}</span>
+                  </td>
+                  <td>
+                    <button @click="removeStudent(index)" class="remove-btn">
+                      🗑️ Padam
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="action-buttons">
+            <button @click="downloadStudentListCSV" class="download-btn">
+              💾 Download Senarai Pelajar CSV
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- New Manual Entry Form Section -->
@@ -130,13 +235,17 @@ Muhammad Ali,2025-08-01,Terlambat,8
           <div class="form-row">
             <div class="form-group">
               <label for="studentName">Nama Pelajar:</label>
-              <input 
-                type="text" 
+              <select 
                 id="studentName"
                 v-model="newRecord.name" 
+                @change="onStudentChange"
                 required
-                placeholder="Masukkan nama pelajar"
               >
+                <option value="">Pilih pelajar</option>
+                <option v-for="student in studentList" :key="student.name" :value="student.name">
+                  {{ student.name }} ({{ student.type }} - {{ student.type === 'iqra' ? 'Tahap ' + student.stage : 'Stage ' + student.stage }})
+                </option>
+              </select>
             </div>
             
             <div class="form-group">
@@ -232,6 +341,7 @@ export default {
   data() {
     return {
       uploadedData: [],
+      studentList: [],
       newRecord: {
         name: '',
         date: '',
@@ -239,6 +349,11 @@ export default {
         stage: '',
         surahName: '',
         pages: null
+      },
+      newStudent: {
+        name: '',
+        type: '',
+        stage: ''
       },
       surahList: [
         {number: 78, name: 'Al-Naba', pages: 40},
@@ -298,9 +413,100 @@ export default {
       }
       
       return !!this.newRecord.stage;
+    },
+    selectedStudentInfo() {
+      const student = this.studentList.find(s => s.name === this.newRecord.name);
+      return student || null;
     }
   },
   methods: {
+    async loadStudentList() {
+      try {
+        const response = await fetch('./student-list.csv');
+        const csvContent = await response.text();
+        this.parseStudentListCSV(csvContent);
+      } catch (error) {
+        console.error('Error loading student list:', error);
+      }
+    },
+    parseStudentListCSV(csvContent) {
+      const lines = csvContent.trim().split('\n');
+      this.studentList = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        if (values.length >= 2) {
+          this.studentList.push({
+            name: values[0],
+            type: values[1],
+            stage: values[2] || ''
+          });
+        }
+      }
+    },
+    downloadStudentListCSV() {
+      if (this.studentList.length === 0) return;
+      
+      let csvContent = 'name,type,stage\n';
+      
+      this.studentList.forEach(student => {
+        csvContent += `${student.name},${student.type},${student.stage}\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student-list.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    },
+    addStudent() {
+      if (!this.newStudent.name || !this.newStudent.type || !this.newStudent.stage) return;
+      
+      // Check if student already exists
+      const existingStudent = this.studentList.find(s => s.name === this.newStudent.name);
+      if (existingStudent) {
+        alert('Pelajar dengan nama ini sudah ada!');
+        return;
+      }
+      
+      // Add student to list
+      this.studentList.push({
+        name: this.newStudent.name,
+        type: this.newStudent.type,
+        stage: this.newStudent.stage
+      });
+      
+      // Reset form
+      this.newStudent = {
+        name: '',
+        type: '',
+        stage: ''
+      };
+      
+      alert('Pelajar berjaya ditambah ke senarai!');
+    },
+    removeStudent(index) {
+      if (confirm('Adakah anda pasti untuk memadamkan pelajar ini?')) {
+        this.studentList.splice(index, 1);
+      }
+    },
+    onNewStudentTypeChange() {
+      // Reset stage when type changes
+      this.newStudent.stage = '';
+    },
+    onStudentChange() {
+      if (this.selectedStudentInfo) {
+        // Auto-fill type and stage based on selected student
+        this.newRecord.type = this.selectedStudentInfo.type;
+        if (this.selectedStudentInfo.stage) {
+          this.newRecord.stage = this.selectedStudentInfo.stage;
+        }
+      }
+    },
     handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -418,6 +624,9 @@ export default {
         pages: null
       };
     }
+  },
+  mounted() {
+    this.loadStudentList();
   }
 }
 </script>
@@ -472,14 +681,14 @@ export default {
   gap: 30px;
 }
 
-.upload-section, .instructions-section, .csv-format-section, .manual-entry-section {
+.upload-section, .instructions-section, .csv-format-section, .manual-entry-section, .student-list-section {
   background: rgba(255,255,255,0.1);
   border-radius: 12px;
   padding: 30px;
   backdrop-filter: blur(10px);
 }
 
-.upload-section h3, .instructions-section h3, .csv-format-section h3, .manual-entry-section h3 {
+.upload-section h3, .instructions-section h3, .csv-format-section h3, .manual-entry-section h3, .student-list-section h3 {
   margin-top: 0;
   font-size: 1.3rem;
   margin-bottom: 20px;
@@ -889,5 +1098,72 @@ select:focus {
   .form-actions {
     flex-direction: column;
   }
+}
+
+/* Student List Section Styles */
+.student-list-section {
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.student-list-section h3 {
+  margin-top: 0;
+  color: #2196F3;
+  font-size: 1.5rem;
+}
+
+.student-form {
+  background: rgba(255,255,255,0.05);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.student-form h4 {
+  margin-top: 0;
+  color: rgba(255,255,255,0.9);
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.student-list-preview {
+  margin-top: 20px;
+}
+
+.student-list-preview h4 {
+  color: #2196F3;
+  margin-bottom: 15px;
+}
+
+.student-table {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+.remove-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(244,67,54,0.3);
+  color: white;
+  border: 1px solid rgba(244,67,54,0.5);
+  transition: all 0.3s ease;
+}
+
+.remove-btn:hover {
+  background: rgba(244,67,54,0.5);
+}
+
+.status-badge.iqra {
+  background: rgba(76,175,80,0.3);
+}
+
+.status-badge.quran {
+  background: rgba(33,150,243,0.3);
 }
 </style>
