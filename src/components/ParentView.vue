@@ -138,7 +138,7 @@
                 <div class="student-progress">
                   <span class="stat-type">{{ student.type }}</span>
                   <span class="stat-stage">{{ getStageText(student.type, student.currentStage) }}</span>
-                  <span class="stat-pages">{{ student.totalPages }} halaman</span>
+                  <span class="stat-pages">halaman {{ student.currentPage }}</span>
                 </div>
               </div>
             </div>
@@ -253,22 +253,18 @@ export default {
             name: record.name,
             type: record.type,
             currentStage: record.stage,
-            totalPages: 0,
-            sessions: 0
+            currentPage: record.pages,
+            sessions: 0,
+            latestDate: record.date
           };
         }
         
-        studentMap[record.name].totalPages += parseInt(record.pages) || 0;
         studentMap[record.name].sessions++;
         
-        // Keep track of the latest stage
-        // For numeric stages, compare numerically; for string stages (Surah names), use the most recent
-        if (typeof record.stage === 'number' && typeof studentMap[record.name].currentStage === 'number') {
-          if (record.stage > studentMap[record.name].currentStage) {
-            studentMap[record.name].currentStage = record.stage;
-          }
-        } else {
-          // For Surah names or mixed types, just use the most recent entry
+        // Keep track of the latest record to get current page and stage
+        if (record.date >= studentMap[record.name].latestDate) {
+          studentMap[record.name].latestDate = record.date;
+          studentMap[record.name].currentPage = record.pages;
           studentMap[record.name].currentStage = record.stage;
         }
       });
