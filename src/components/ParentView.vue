@@ -36,11 +36,56 @@
             :class="['calendar-day', { 
               'other-month': date.otherMonth,
               'today': date.isToday,
-              'has-attendance': date.hasAttendance
+              'has-attendance': date.hasAttendance,
+              'isClassDay': date.isClassDay
             }]"
           >
             <div class="date-number">{{ date.day }}</div>
-            <div v-if="date.attendanceData.length > 0" class="attendance-summary">
+            
+            <!-- Class day logic -->
+            <div v-if="date.isClassDay" class="class-info">
+              <!-- No attendance records - class canceled -->
+              <div v-if="date.attendanceData.length === 0" class="class-status canceled">
+                <div class="status-text">Kelas Dibatalkan</div>
+              </div>
+              
+              <!-- Has attendance records - show present and absent -->
+              <div v-else class="attendance-summary">
+                <div class="attendance-count">
+                  {{ date.attendanceData.length }}/{{ registeredStudents.length }} hadir
+                </div>
+                
+                <!-- Present students -->
+                <div class="attendance-details">
+                  <div 
+                    v-for="record in date.attendanceData.slice(0, 3)" 
+                    :key="record.name"
+                    :class="['attendance-item', getAttendanceTypeClass(record.type)]"
+                    :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
+                  >
+                    {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage) }}
+                  </div>
+                  
+                  <!-- Absent students -->
+                  <div 
+                    v-for="absentStudent in getAbsentStudents(date.attendanceData).slice(0, Math.max(0, 5 - date.attendanceData.length))"
+                    :key="'absent-' + absentStudent.name"
+                    class="attendance-item absent"
+                    :title="`${absentStudent.name}: Tidak Hadir`"
+                  >
+                    {{ absentStudent.name.split(' ')[0] }} ✗
+                  </div>
+                  
+                  <!-- More indicator -->
+                  <div v-if="(date.attendanceData.length + getAbsentStudents(date.attendanceData).length) > 5" class="more-indicator">
+                    +{{ (date.attendanceData.length + getAbsentStudents(date.attendanceData).length) - 5 }} lagi
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Non-class day with attendance (weekend makeup classes etc) -->
+            <div v-else-if="date.attendanceData.length > 0" class="attendance-summary">
               <div class="attendance-count">
                 {{ date.attendanceData.length }} pelajar
               </div>
@@ -113,6 +158,7 @@ export default {
   data() {
     return {
       students: [],
+      registeredStudents: [], // Added to store student list
       currentDate: new Date(),
       dayHeaders: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
       isLoading: true,
@@ -120,6 +166,7 @@ export default {
     }
   },
   async mounted() {
+    await this.loadStudentList();
     await this.loadAttendanceData();
   },
   computed: {
@@ -162,7 +209,9 @@ export default {
           otherMonth: date.getMonth() !== month,
           isToday: date.toDateString() === today.toDateString(),
           hasAttendance: attendanceData.length > 0,
-          attendanceData: attendanceData
+          attendanceData: attendanceData,
+          isClassDay: this.isClassDay(date), // Added class day check
+          dayOfWeek: date.getDay() // 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday
         });
       }
       
@@ -226,6 +275,45 @@ export default {
     }
   },
   methods: {
+    async loadStudentList() {
+      try {
+        const response = await fetch('./student-list.csv');
+        if (!response.ok) {
+          throw new Error('Failed to load student list');
+        }
+        
+        const csvContent = await response.text();
+        const lines = csvContent.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        this.registeredStudents = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          if (values.length >= 3) {
+            this.registeredStudents.push({
+              name: values[0],
+              type: values[1],
+              stage: values[2]
+            });
+          }
+        }
+        
+        console.log('Student list loaded:', this.registeredStudents);
+      } catch (err) {
+        console.error('Error loading student list:', err);
+      }
+    },
+    isClassDay(date) {
+      const dayOfWeek = date.getDay();
+      return dayOfWeek === 1 || dayOfWeek === 2 || dayOfWeek === 3; // Monday, Tuesday, Wednesday
+    },
+    getAbsentStudents(attendanceData) {
+      const presentStudentNames = attendanceData.map(record => record.name);
+      return this.registeredStudents.filter(student => 
+        !presentStudentNames.includes(student.name)
+      );
+    },
     async loadAttendanceData() {
       try {
         this.isLoading = true;
@@ -459,6 +547,34 @@ export default {
 
 .calendar-day.has-attendance {
   background: rgba(76,175,80,0.2);
+}
+
+.calendar-day.isClassDay {
+  border-left: 4px solid rgba(255,193,7,0.6);
+}
+
+.class-info {
+  font-size: 12px;
+}
+
+.class-status.canceled {
+  background: rgba(244,67,54,0.2);
+  padding: 4px;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.status-text {
+  font-size: 10px;
+  font-weight: bold;
+  color: rgba(255,255,255,0.9);
+}
+
+.attendance-item.absent {
+  background: rgba(244,67,54,0.2);
+  border-left: 3px solid #f44336;
+  color: rgba(255,255,255,0.8);
 }
 
 .date-number {
