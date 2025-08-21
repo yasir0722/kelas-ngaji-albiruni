@@ -1,0 +1,20 @@
+{
+  "name": "kelas-ngaji-albiruni-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "@vue/runtime-dom": "^3.4.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.1.6",
+    "gh-pages": "^6.1.1"
+  }
+}
