@@ -7,7 +7,7 @@
     </header>
 
     <div class="admin-container">
-      <!-- <div class="upload-section">
+      <div class="upload-section">
         <h3>📤 Upload File CSV Baru</h3>
         <p>Upload file CSV dengan format: <code>name,date,type,stage,pages</code></p>
         
@@ -59,7 +59,7 @@
           
           <div class="action-buttons">
             <button @click="downloadCSV" class="download-btn">
-              💾 Download CSV untuk Git
+              � Show CSV Content
             </button>
             <button @click="clearData" class="clear-btn">
               🗑️ Hapus Data
@@ -68,68 +68,35 @@
         </div>
       </div>
 
-      <div class="instructions-section">
-        <div class="instructions-header" @click="toggleInstructions">
-          <h3>📋 Petunjuk Penggunaan</h3>
-          <button class="toggle-btn" :class="{ expanded: showInstructions }">
-        {{ showInstructions ? '▼' : '▶' }}
+      <!-- Attendance CSV Output from Upload Section -->
+      <div v-if="showAttendanceCsvOutput && uploadedData.length > 0" class="csv-output-section">
+        <h4>📄 Updated Attendance CSV Content</h4>
+        <p>Copy this content and replace your sample-attendance.csv files in both /public and /docs folders:</p>
+        
+        <div class="csv-content">
+          <pre>{{ attendanceCsvOutput }}</pre>
+        </div>
+        
+        <div class="csv-actions">
+          <button @click="copyAttendanceCsvToClipboard" class="copy-btn">
+            📋 Copy to Clipboard
+          </button>
+          <button @click="closeAttendanceCsvOutput" class="close-btn">
+            ❌ Close
           </button>
         </div>
         
-        <div v-show="showInstructions" class="instructions">
-          <div class="step">
-        <h4>1. 📤 Upload File CSV</h4>
-        <p>Upload file CSV dengan format yang benar. File akan ditampilkan dalam preview.</p>
-          </div>
-          
-          <div class="step">
-        <h4>2. 💾 Download File untuk Git</h4>
-        <p>Setelah puas dengan data, klik "Download CSV untuk Git" untuk mendapatkan file yang siap di-commit.</p>
-          </div>
-          
-          <div class="step">
-        <h4>3. 🔄 Update Repository</h4>
-        <p>
-          Ganti file <code>sample-attendance.csv</code> di repository dengan file yang baru di-download, 
-          lalu commit dan push ke GitHub:
-        </p>
-        <code class="command">
-          git add sample-attendance.csv<br>
-          git commit -m "Update attendance data"<br>
-          git push origin main
-        </code>
-          </div>
-          
-          <div class="step">
-        <h4>4. ✅ Selesai</h4>
-        <p>Data kehadiran akan otomatis terupdate di halaman parent dalam beberapa menit.</p>
-          </div>
+        <div class="csv-instructions">
+          <p><strong>Steps to update:</strong></p>
+          <ol>
+            <li>Copy the attendance content above</li>
+            <li>Replace content in <code>public/sample-attendance.csv</code></li>
+            <li>Replace content in <code>docs/sample-attendance.csv</code></li>
+            <li>Commit and push to Git</li>
+          </ol>
         </div>
-      </div> -->
-
-      <!-- <div class="csv-format-section">
-        <h3>📄 Format CSV yang Diperlukan</h3>
-        <div class="format-example">
-          <code>
-name,date,type,stage,pages<br>
-Ahmad Zaki,2025-08-01,Hadir,15<br>
-Fatimah Sari,2025-08-01,Tidak Hadir,<br>
-Muhammad Ali,2025-08-01,Terlambat,8
-          </code>
-        </div>
-        
-        <div class="format-notes">
-          <h4>Keterangan:</h4>
-          <ul>
-            <li><strong>name</strong>: Nama lengkap santri</li>
-            <li><strong>date</strong>: Tanggal dalam format YYYY-MM-DD</li>
-            <li><strong>type</strong>: Status kehadiran (Hadir, Tidak Hadir, Terlambat)</li>
-            <li><strong>pages</strong>: Jumlah halaman yang dibaca (boleh kosong)</li>
-          </ul>
-        </div>
-      </div> -->
-
-      <!-- Student List Management Section -->
+      </div>
+      
       <div class="student-list-section">
         <h3>👥 Kelola Senarai Pelajar</h3>
         
@@ -219,11 +186,34 @@ Muhammad Ali,2025-08-01,Terlambat,8
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- CSV Output Display -->
+        <div v-if="showCsvOutput" class="csv-output-section">
+          <h4>📄 Updated CSV Content</h4>
+          <p>Copy this content and replace your student-list.csv files in both /public and /docs folders:</p>
           
-          <div class="action-buttons">
-            <button @click="downloadStudentListCSV" class="download-btn">
-              💾 Download Senarai Pelajar CSV
+          <div class="csv-content">
+            <pre>{{ csvOutput }}</pre>
+          </div>
+          
+          <div class="csv-actions">
+            <button @click="copyCsvToClipboard" class="copy-btn">
+              📋 Copy to Clipboard
             </button>
+            <button @click="closeCsvOutput" class="close-btn">
+              ❌ Close
+            </button>
+          </div>
+          
+          <div class="csv-instructions">
+            <p><strong>Steps to update:</strong></p>
+            <ol>
+              <li>Copy the content above</li>
+              <li>Replace content in <code>public/student-list.csv</code></li>
+              <li>Replace content in <code>docs/student-list.csv</code></li>
+              <li>Commit and push to Git</li>
+            </ol>
           </div>
         </div>
       </div>
@@ -330,6 +320,35 @@ Muhammad Ali,2025-08-01,Terlambat,8
             </button>
           </div>
         </form>
+
+        <!-- Attendance CSV Output Display -->
+        <div v-if="showAttendanceCsvOutput" class="csv-output-section">
+          <h4>📄 Updated Attendance CSV Content</h4>
+          <p>Copy this content and replace your sample-attendance.csv files in both /public and /docs folders:</p>
+          
+          <div class="csv-content">
+            <pre>{{ attendanceCsvOutput }}</pre>
+          </div>
+          
+          <div class="csv-actions">
+            <button @click="copyAttendanceCsvToClipboard" class="copy-btn">
+              📋 Copy to Clipboard
+            </button>
+            <button @click="closeAttendanceCsvOutput" class="close-btn">
+              ❌ Close
+            </button>
+          </div>
+          
+          <div class="csv-instructions">
+            <p><strong>Steps to update:</strong></p>
+            <ol>
+              <li>Copy the attendance content above</li>
+              <li>Replace content in <code>public/sample-attendance.csv</code></li>
+              <li>Replace content in <code>docs/sample-attendance.csv</code></li>
+              <li>Commit and push to Git</li>
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -342,6 +361,10 @@ export default {
     return {
       uploadedData: [],
       studentList: [],
+      csvOutput: '',
+      showCsvOutput: false,
+      attendanceCsvOutput: '',
+      showAttendanceCsvOutput: false,
       newRecord: {
         name: '',
         date: '',
@@ -444,25 +467,6 @@ export default {
         }
       }
     },
-    downloadStudentListCSV() {
-      if (this.studentList.length === 0) return;
-      
-      let csvContent = 'name,type,stage\n';
-      
-      this.studentList.forEach(student => {
-        csvContent += `${student.name},${student.type},${student.stage}\n`;
-      });
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'student-list.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    },
     addStudent() {
       if (!this.newStudent.name || !this.newStudent.type || !this.newStudent.stage) return;
       
@@ -480,6 +484,9 @@ export default {
         stage: this.newStudent.stage
       });
       
+      // Automatically save to CSV
+      this.saveStudentListCSV();
+      
       // Reset form
       this.newStudent = {
         name: '',
@@ -487,11 +494,34 @@ export default {
         stage: ''
       };
       
-      alert('Pelajar berjaya ditambah ke senarai!');
+      alert('Pelajar berjaya ditambah ke senarai dan CSV telah dikemas kini!');
+    },
+    copyCsvToClipboard() {
+      navigator.clipboard.writeText(this.csvOutput).then(() => {
+        alert('CSV content telah disalin ke clipboard!');
+      });
+    },
+    closeCsvOutput() {
+      this.showCsvOutput = false;
+    },
+    saveStudentListCSV() {
+      if (this.studentList.length === 0) return;
+      
+      let csvContent = 'name,type,stage\n';
+      
+      this.studentList.forEach(student => {
+        csvContent += `${student.name},${student.type},${student.stage}\n`;
+      });
+      
+      // Store CSV content to display to user
+      this.csvOutput = csvContent;
+      this.showCsvOutput = true;
     },
     removeStudent(index) {
       if (confirm('Adakah anda pasti untuk memadamkan pelajar ini?')) {
         this.studentList.splice(index, 1);
+        // Auto-save updated list
+        this.saveStudentListCSV();
       }
     },
     onNewStudentTypeChange() {
@@ -546,27 +576,15 @@ export default {
       this.uploadedData.sort((a, b) => new Date(a.date) - new Date(b.date));
     },
     downloadCSV() {
-      if (this.uploadedData.length === 0) return;
-      
-      let csvContent = 'name,date,type,stage,pages\n';
-      
-      this.uploadedData.forEach(record => {
-        csvContent += `${record.name},${record.date},${record.type},${record.stage},${record.pages}\n`;
-      });
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'sample-attendance.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      this.generateAttendanceCsv();
     },
     clearData() {
       this.uploadedData = [];
-      this.$refs.fileInput.value = '';
+      this.showAttendanceCsvOutput = false;
+      this.attendanceCsvOutput = '';
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.value = '';
+      }
     },
     getStatusClass(type) {
       if (type === 'Iqra') return 'iqra';
@@ -608,11 +626,35 @@ export default {
       // Sort by date
       this.uploadedData.sort((a, b) => new Date(a.date) - new Date(b.date));
       
+      // Generate attendance CSV content
+      this.generateAttendanceCsv();
+      
       // Reset form
       this.resetForm();
       
-      // Show success message (you could add a toast notification here)
+      // Show success message
       alert('Rekod kehadiran berjaya ditambah!');
+    },
+    generateAttendanceCsv() {
+      if (this.uploadedData.length === 0) return;
+      
+      let csvContent = 'name,date,type,stage,pages\n';
+      
+      this.uploadedData.forEach(record => {
+        csvContent += `${record.name},${record.date},${record.type},${record.stage},${record.pages}\n`;
+      });
+      
+      // Store attendance CSV content to display to user
+      this.attendanceCsvOutput = csvContent;
+      this.showAttendanceCsvOutput = true;
+    },
+    copyAttendanceCsvToClipboard() {
+      navigator.clipboard.writeText(this.attendanceCsvOutput).then(() => {
+        alert('Attendance CSV content telah disalin ke clipboard!');
+      });
+    },
+    closeAttendanceCsvOutput() {
+      this.showAttendanceCsvOutput = false;
     },
     resetForm() {
       this.newRecord = {
@@ -1165,5 +1207,95 @@ select:focus {
 
 .status-badge.quran {
   background: rgba(33,150,243,0.3);
+}
+
+/* CSV Output Section */
+.csv-output-section {
+  background: rgba(255,193,7,0.1);
+  border: 2px solid rgba(255,193,7,0.3);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.csv-output-section h4 {
+  color: #FFC107;
+  margin-top: 0;
+}
+
+.csv-content {
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 15px;
+  margin: 15px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.csv-content pre {
+  color: white;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.csv-actions {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.copy-btn, .close-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.copy-btn {
+  background: rgba(76,175,80,0.3);
+  color: white;
+  border: 1px solid rgba(76,175,80,0.5);
+}
+
+.copy-btn:hover {
+  background: rgba(76,175,80,0.5);
+}
+
+.close-btn {
+  background: rgba(244,67,54,0.3);
+  color: white;
+  border: 1px solid rgba(244,67,54,0.5);
+}
+
+.close-btn:hover {
+  background: rgba(244,67,54,0.5);
+}
+
+.csv-instructions {
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.csv-instructions ol {
+  margin: 10px 0 0 0;
+  padding-left: 20px;
+}
+
+.csv-instructions li {
+  margin-bottom: 5px;
+}
+
+.csv-instructions code {
+  background: rgba(0,0,0,0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
 }
 </style>
