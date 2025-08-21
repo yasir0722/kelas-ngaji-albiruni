@@ -126,10 +126,13 @@ export default {
   },
   computed: {
     currentMonthYear() {
-      return this.currentDate.toLocaleDateString('id-ID', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
+      const malayMonths = [
+        'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun',
+        'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'
+      ];
+      const month = malayMonths[this.currentDate.getMonth()];
+      const year = this.currentDate.getFullYear();
+      return `${month} ${year}`;
     },
     calendarDates() {
       const year = this.currentDate.getFullYear();
