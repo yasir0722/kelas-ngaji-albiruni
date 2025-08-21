@@ -1,31 +1,75 @@
 name,date,type,stage,pages
-Ahmad Zaki,2025-08-01,Iqra,3,15
-Fatimah Sari,2025-08-01,Iqra,2,12
-Muhammad Ali,2025-08-01,Quran,1,45
-Khadijah Nur,2025-08-01,Iqra,4,20
-Hassan Ibrahim,2025-08-01,Iqra,1,5
-Ahmad Zaki,2025-08-03,Iqra,3,18
-Fatimah Sari,2025-08-03,Iqra,2,16
-Muhammad Ali,2025-08-03,Quran,1,47
-Khadijah Nur,2025-08-03,Iqra,4,22
-Hassan Ibrahim,2025-08-03,Iqra,1,8
-Ahmad Zaki,2025-08-05,Iqra,3,20
-Fatimah Sari,2025-08-05,Iqra,2,18
-Muhammad Ali,2025-08-05,Quran,1,50
-Khadijah Nur,2025-08-05,Iqra,4,24
-Hassan Ibrahim,2025-08-05,Iqra,1,10
-Aisha Rahman,2025-08-07,Quran,Al-Naba,15
-Umar Farooq,2025-08-07,Iqra,5,10
-Zainab Ali,2025-08-07,Iqra,6,15
-Ahmad Zaki,2025-08-10,Iqra,4,2
-Fatimah Sari,2025-08-10,Iqra,2,20
-Muhammad Ali,2025-08-10,Quran,1,55
-Khadijah Nur,2025-08-10,Iqra,4,24
-Hassan Ibrahim,2025-08-10,Iqra,1,12
-Aisha Rahman,2025-08-10,Quran,Al-Nazaat,25
-Umar Farooq,2025-08-10,Iqra,5,15
-Zainab Ali,2025-08-10,Iqra,6,20
-Ahmad Zaki,2025-08-12,Iqra,4,5
-Aisha Rahman,2025-08-12,Quran,Abasa,18
-Ali Hassan,2025-08-14,Quran,At-Takwir,12
-Siti Aminah,2025-08-14,Quran,Al-Infitar,8
+Naufal,2025-06-17,Quran,1,446
+Anggun,2025-06-17,Iqra,1,12
+Nazira,2025-06-17,Quran,Ad-Dhuha,5
+Anggun,2025-06-18,Iqra,1,12
+Nazira,2025-06-18,Quran,Al-Lail,10
+Naufal,2025-06-18,Quran,1,447
+Mikhail,2025-06-18,Iqra,1,11
+Muzafar,2025-06-18,Iqra,1,11
+Anggun,2025-06-23,Iqra,1,12
+Nazira,2025-06-23,Quran,Ad-Dhuha,5
+Naufal,2025-06-23,Quran,1,448
+Mikhail,2025-06-24,Iqra,1,11
+Muzafar,2025-06-24,Iqra,1,11
+Anggun,2025-06-24,Iqra,1,12
+Naufal,2025-06-24,Quran,1,449
+Anggun,2025-06-25,Iqra,1,13
+Mikhail,2025-06-25,Iqra,1,12
+Muzafar,2025-06-25,Iqra,1,12
+Anggun,2025-06-30,Iqra,1,13
+Naufal,2025-06-30,Quran,1,451
+Nazira,2025-06-30,Quran,Al-Lail,10
+Mikhail,2025-07-01,Iqra,1,12
+Mikhail,2025-07-02,Iqra,1,13
+Muzafar,2025-07-02,Iqra,1,13
+Nazira,2025-07-02,Quran,Al-Lail,10
+Naufal,2025-07-02,Quran,1,452
+Anggun,2025-07-07,Iqra,1,14
+Nazira,2025-07-07,Quran,Ash-Shams,8
+Naufal,2025-07-08,Quran,1,455
+Nazira,2025-07-08,Quran,Ash-Shams,8
+Mikhail,2025-07-08,Iqra,1,14
+Muzafar,2025-07-08,Iqra,1,14
+Anggun,2025-07-08,Iqra,1,15
+Naufal,2025-07-15,Quran,1,456
+Anggun,2025-07-15,Iqra,1,16
+Mikhail,2025-07-15,Iqra,1,15
+Muzafar,2025-07-15,Iqra,1,15
+Naufal,2025-07-16,Quran,1,469
+Mikhail,2025-07-22,Iqra,1,15
+Naufal,2025-07-23,Quran,1,471
+Mikhail,2025-07-23,Iqra,1,15
+Anggun,2025-07-23,Iqra,1,13
+Nazira,2025-07-23,Quran,Al-Fajr,15
+Anggun,2025-07-28,Iqra,1,16
+Anggun,2025-07-29,Iqra,1,17
+Naufal,2025-07-29,Quran,1,472
+Nazira,2025-07-29,Quran,Al-Fajr,15
+Mikhail,2025-07-29,Iqra,1,16
+Naufal,2025-07-30,Quran,1,474
+Mikhail,2025-07-30,Iqra,1,16
+Muzafar,2025-07-30,Iqra,1,16
+Anggun,2025-07-30,Iqra,1,17
+Naufal,2025-08-04,Quran,1,475
+Anggun,2025-08-05,Iqra,1,18
+Nazira,2025-08-05,Quran,Al-Fajr,15
+Naufal,2025-08-05,Quran,1,476
+Anggun,2025-08-06,Iqra,1,18
+Mikhail,2025-08-06,Iqra,1,16
+Muzafar,2025-08-06,Iqra,1,16
+Naufal,2025-08-06,Quran,1,477
+Naufal,2025-08-11,Quran,1,479
+Anggun,2025-08-11,Iqra,1,19
+Mikhail,2025-08-12,Iqra,1,22
+Muzafar,2025-08-12,Iqra,1,21
+Anggun,2025-08-12,Iqra,1,19
+Naufal,2025-08-12,Quran,1,480
+Anggun,2025-08-13,Iqra,1,18
+Mikhail,2025-08-13,Iqra,1,22
+Muzafar,2025-08-13,Iqra,1,21
+Naufal,2025-08-13,Quran,1,481
+Nazira,2025-08-18,Quran,Al-Ala,9
+Naufal,2025-08-18,Quran,1,502
+Nazira,2025-08-20,Quran,Al-Ala,9
+Naufal,2025-08-20,Quran,1,503

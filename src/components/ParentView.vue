@@ -114,7 +114,7 @@ export default {
     return {
       students: [],
       currentDate: new Date(),
-      dayHeaders: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+      dayHeaders: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
       isLoading: true,
       error: null
     }
