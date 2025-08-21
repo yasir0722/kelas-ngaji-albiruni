@@ -138,7 +138,7 @@
                 <div class="student-progress">
                   <span class="stat-type">{{ student.type }}</span>
                   <span class="stat-stage">{{ getStageText(student.type, student.currentStage) }}</span>
-                  <span class="stat-pages">halaman {{ student.currentPage }}</span>
+                  <span class="stat-pages">{{ getPageDisplayText(student.type, student.currentStage, student.currentPage) }}</span>
                 </div>
               </div>
             </div>
@@ -147,7 +147,7 @@
       </div>
     </div>
 
-    <div class="admin-link">
+    <div class="admin-link" v-if="isLocalhost">
       <a href="/kelas-ngaji-albiruni/admin" class="admin-button">🔧 Admin</a>
     </div>
   </div>
@@ -270,6 +270,11 @@ export default {
       });
       
       return Object.values(studentMap).sort((a, b) => a.name.localeCompare(b.name));
+    },
+    isLocalhost() {
+      return window.location.hostname === 'localhost' || 
+             window.location.hostname === '127.0.0.1' || 
+             window.location.hostname === '';
     }
   },
   methods: {
@@ -400,6 +405,15 @@ export default {
         }
       }
       return '';
+    },
+    getPageDisplayText(type, stage, pages) {
+      if (type === 'Quran' && isNaN(stage)) {
+        // Quran Stage 2 (Surah names) - show "surah ke-XX"
+        return `surah ke-${pages}`;
+      } else {
+        // Iqra and Quran Stage 1 - show "halaman XX"
+        return `halaman ${pages}`;
+      }
     },
     updateStatTypeStyles() {
       this.$nextTick(() => {
