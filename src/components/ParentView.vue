@@ -59,7 +59,7 @@
                 <!-- Present students -->
                 <div class="attendance-details">
                   <div 
-                    v-for="record in date.attendanceData.slice(0, 3)" 
+                    v-for="record in date.attendanceData.slice(0, Math.min(date.attendanceData.length, 5))" 
                     :key="record.name"
                     :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                     :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
@@ -69,7 +69,7 @@
                   
                   <!-- Absent students -->
                   <div 
-                    v-for="absentStudent in getAbsentStudents(date.attendanceData).slice(0, Math.max(0, 5 - date.attendanceData.length))"
+                    v-for="absentStudent in getAbsentStudents(date.attendanceData).slice(0, Math.max(0, 5 - Math.min(date.attendanceData.length, 5)))"
                     :key="'absent-' + absentStudent.name"
                     class="attendance-item absent"
                     :title="`${absentStudent.name}: Tidak Hadir`"
@@ -201,7 +201,8 @@ export default {
         const dateMonth = String(date.getMonth() + 1).padStart(2, '0');
         const dateDay = String(date.getDate()).padStart(2, '0');
         const dateString = `${dateYear}-${dateMonth}-${dateDay}`;
-        const attendanceData = this.students.filter(s => s.date === dateString);
+        const attendanceData = this.students.filter(s => s.date === dateString)
+          .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
         
         dates.push({
           key: dateString,
@@ -313,7 +314,7 @@ export default {
       const presentStudentNames = attendanceData.map(record => record.name);
       return this.registeredStudents.filter(student => 
         !presentStudentNames.includes(student.name)
-      );
+      ).sort((a, b) => a.name.localeCompare(b.name)); // Sort absent students alphabetically
     },
     async loadAttendanceData() {
       try {
