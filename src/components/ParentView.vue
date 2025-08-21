@@ -46,15 +46,15 @@
               </div>
               <div class="attendance-details">
                 <div 
-                  v-for="record in date.attendanceData.slice(0, 3)" 
+                  v-for="record in date.attendanceData.slice(0, 5)" 
                   :key="record.name"
                   :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                   :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                 >
                   {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage) }}
                 </div>
-                <div v-if="date.attendanceData.length > 3" class="more-indicator">
-                  +{{ date.attendanceData.length - 3 }} lagi
+                <div v-if="date.attendanceData.length > 5" class="more-indicator">
+                  +{{ date.attendanceData.length - 5 }} lagi
                 </div>
               </div>
             </div>
