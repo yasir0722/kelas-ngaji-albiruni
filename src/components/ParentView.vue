@@ -45,7 +45,7 @@
             <!-- Class day logic -->
             <div v-if="date.isClassDay" class="class-info">
               <!-- No attendance records - class canceled (only for past dates) -->
-              <div v-if="date.attendanceData.length === 0 && date.date <= new Date()" class="class-status canceled">
+              <div v-if="date.attendanceData.length === 0 && date.date < new Date()" class="class-status canceled">
                 <div class="status-text">Kelas Dibatalkan</div>
                 <div class="status-text">/ Tiada Rekod</div>
               </div>
