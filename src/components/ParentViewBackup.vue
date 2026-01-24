@@ -16,7 +16,7 @@
     <div v-if="students.length > 0" class="calendar-container">
       <div class="controls">
         <div class="month-nav">
-          <button @click="previousMonth" class="nav-btn" :disabled="!canPreviousMonth" title="Tidak boleh pergi sebelum Jan 2026">‹ Bulan Sebelumnya</button>
+          <button @click="previousMonth" class="nav-btn">‹ Bulan Sebelumnya</button>
           <span class="current-month">{{ currentMonthYear }}</span>
           <button @click="nextMonth" class="nav-btn">Bulan Berikutnya ›</button>
         </div>
@@ -24,14 +24,16 @@
 
       <div class="calendar">
         <div class="calendar-header">
-          <div class="day-header" v-for="day in dayHeaders" :key="day">{{ day }}</div>
+          <div class="day-header" v-for="day in dayHeaders" :key="day">
+            {{ day }}
+          </div>
         </div>
-
+        
         <div class="calendar-grid">
-          <div
-            v-for="date in calendarDates"
+          <div 
+            v-for="date in calendarDates" 
             :key="date.key"
-            :class="['calendar-day', {
+            :class="['calendar-day', { 
               'other-month': date.otherMonth,
               'today': date.isToday,
               'has-attendance': date.hasAttendance,
@@ -39,55 +41,66 @@
             }]"
           >
             <div class="date-number">{{ date.day }}</div>
-
+            
+            <!-- Class day logic -->
             <div v-if="date.isClassDay" class="class-info">
+              <!-- No attendance records - class canceled (only for past dates) -->
               <div v-if="date.attendanceData.length === 0 && date.date < new Date()" class="class-status canceled">
                 <div class="status-text">Kelas Dibatalkan</div>
                 <div class="status-text">/ Tiada Rekod</div>
               </div>
-
+              
+              <!-- Has attendance records - show present and absent -->
               <div v-else-if="date.attendanceData.length > 0" class="attendance-summary">
-                <div class="attendance-count">{{ date.attendanceData.length }}/{{ registeredStudents.length }} hadir</div>
-
+                <div class="attendance-count">
+                  {{ date.attendanceData.length }}/{{ registeredStudents.length }} hadir
+                </div>
+                
+                <!-- Present students -->
                 <div class="attendance-details">
-                  <div
-                    v-for="record in date.attendanceData.slice(0, Math.min(date.attendanceData.length, maxDisplay))"
+                  <div 
+                    v-for="record in date.attendanceData.slice(0, Math.min(date.attendanceData.length, 5))" 
                     :key="record.name"
                     :class="['attendance-item', getAttendanceTypeClass(record.type)]"
-                    :title="`${record.name}: ${formatAttendanceLabel(record.type, record.stage, record.pages)}`"
+                    :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                   >
-                    {{ record.name.split(' ')[0] }} {{ formatAttendanceLabel(record.type, record.stage, record.pages) }}
+                    {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage, record.pages) }}
                   </div>
-
-                  <div
-                    v-for="absentStudent in getAbsentStudents(date.attendanceData).slice(0, Math.max(0, maxDisplay - Math.min(date.attendanceData.length, maxDisplay)))"
+                  
+                  <!-- Absent students -->
+                  <div 
+                    v-for="absentStudent in getAbsentStudents(date.attendanceData).slice(0, Math.max(0, 5 - Math.min(date.attendanceData.length, 5)))"
                     :key="'absent-' + absentStudent.name"
                     class="attendance-item absent"
                     :title="`${absentStudent.name}: Tidak Hadir`"
                   >
                     {{ absentStudent.name.split(' ')[0] }} ✗
                   </div>
-
-                  <div v-if="(date.attendanceData.length + getAbsentStudents(date.attendanceData).length) > maxDisplay" class="more-indicator">
-                    +{{ (date.attendanceData.length + getAbsentStudents(date.attendanceData).length) - maxDisplay }} lagi
+                  
+                  <!-- More indicator -->
+                  <div v-if="(date.attendanceData.length + getAbsentStudents(date.attendanceData).length) > 5" class="more-indicator">
+                    +{{ (date.attendanceData.length + getAbsentStudents(date.attendanceData).length) - 5 }} lagi
                   </div>
                 </div>
               </div>
             </div>
-
+            
+            <!-- Non-class day with attendance (weekend makeup classes etc) -->
             <div v-else-if="date.attendanceData.length > 0" class="attendance-summary">
-              <div class="attendance-count">{{ date.attendanceData.length }} pelajar</div>
+              <div class="attendance-count">
+                {{ date.attendanceData.length }} pelajar
+              </div>
               <div class="attendance-details">
-                <div
-                  v-for="record in date.attendanceData.slice(0, maxDisplay)"
+                <div 
+                  v-for="record in date.attendanceData.slice(0, 5)" 
                   :key="record.name"
                   :class="['attendance-item', getAttendanceTypeClass(record.type)]"
-                  :title="`${record.name}: ${formatAttendanceLabel(record.type, record.stage, record.pages)}`"
+                  :title="`${record.name}: ${record.type} ${getStageText(record.type, record.stage)} - halaman ${record.pages}`"
                 >
-                  {{ record.name.split(' ')[0] }} {{ formatAttendanceLabel(record.type, record.stage, record.pages) }}
+                  {{ record.name.split(' ')[0] }} {{ getShortStageText(record.type, record.stage, record.pages) }}
                 </div>
-                <div v-if="date.attendanceData.length > maxDisplay" class="more-indicator">
-                  +{{ date.attendanceData.length - maxDisplay }} lagi
+                <div v-if="date.attendanceData.length > 5" class="more-indicator">
+                  +{{ date.attendanceData.length - 5 }} lagi
                 </div>
               </div>
             </div>
@@ -115,7 +128,11 @@
         <div class="student-list">
           <h4>👥 Kehadiran Pelajar Bulan Ini</h4>
           <div class="student-grid">
-            <div v-for="student in uniqueStudentsThisMonth" :key="student.name" class="student-card">
+            <div 
+              v-for="student in uniqueStudentsThisMonth" 
+              :key="student.name"
+              class="student-card"
+            >
               <div class="student-name">{{ student.name }}</div>
               <div class="student-stats">
                 <div class="student-progress">
@@ -146,8 +163,7 @@ export default {
       currentDate: new Date(),
       dayHeaders: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
       isLoading: true,
-      error: null,
-      maxDisplay: 10
+      error: null
     }
   },
   async mounted() {
@@ -163,15 +179,6 @@ export default {
       const month = malayMonths[this.currentDate.getMonth()];
       const year = this.currentDate.getFullYear();
       return `${month} ${year}`;
-    },
-    canPreviousMonth() {
-      // do not allow navigating to before Jan 2026
-      const year = this.currentDate.getFullYear();
-      const month = this.currentDate.getMonth();
-      // if already at Jan 2026, cannot go previous
-      if (year < 2026) return false;
-      if (year === 2026 && month === 0) return false;
-      return true;
     },
     calendarDates() {
       const year = this.currentDate.getFullYear();
@@ -224,8 +231,8 @@ export default {
       
       return {
         total: monthlyData.length,
-        iqra: monthlyData.filter(s => (s.type || '').toString().toLowerCase() === 'iqra').length,
-        quran: monthlyData.filter(s => (s.type || '').toString().toLowerCase() === 'quran').length
+        iqra: monthlyData.filter(s => s.type === 'Iqra').length,
+        quran: monthlyData.filter(s => s.type === 'Quran').length
       };
     },
     uniqueStudentsThisMonth() {
@@ -314,261 +321,110 @@ export default {
       try {
         this.isLoading = true;
         this.error = null;
-
-        // First try to load attendance from the shared Google Sheet (public CSV export)
-        const sheetId = '1LLJvLI1cRVbdK7066hi-gJdOt--1Er9OcyyipOQdk7I';
-        const gid = '0'; // change if the attendance is on a different tab
-        const gsUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-
-        let response = await fetch(gsUrl);
-
-        // If Google Sheets fetch fails (not public or CORS), fall back to local CSV
+        
+        // Load the attendance data from the sample CSV file
+        const response = await fetch('./sample-attendance.csv');
         if (!response.ok) {
-          console.warn('Google Sheets fetch failed, falling back to local CSV:', response.status);
-          response = await fetch('./sample-attendance.csv');
+          throw new Error('Gagal memuat data kehadiran');
         }
-
-        if (!response.ok) {
-          throw new Error('Gagal memuat data kehadiran dari Google Sheet dan juga local CSV');
-        }
-
+        
         const csvContent = await response.text();
         this.parseCSV(csvContent);
         console.log('Attendance data loaded successfully:', this.students);
-
+        
       } catch (err) {
-        this.error = 'Gagal memuat data kehadiran. Pastikan Google Sheet dibuka untuk umum atau file CSV lokal tersedia.';
+        this.error = 'Gagal memuat data kehadiran. Pastikan file CSV tersedia.';
         console.error('Error loading attendance data:', err);
       } finally {
         this.isLoading = false;
       }
     },
     parseCSV(csvContent) {
-      // Robust CSV parsing for two formats:
-      // 1) Standard local CSV: name,date,type,stage,pages
-      // 2) Google Sheets export with headers like: Timestamp,kategori,nama,mukasurat,nama,surah,nama,tahap,mukasurat
-      const lines = csvContent.trim().split('\n').map(l => l.trim()).filter(Boolean);
-      if (lines.length === 0) return;
-
-      const rawHeaders = lines[0].split(',').map(h => h.trim());
-      const headers = rawHeaders.map(h => h.toLowerCase());
-
-      const students = [];
-
-      const parseTimestampToDate = (ts) => {
-        if (!ts) return '';
-        // Try Date parsing first
-        const d = new Date(ts);
-        if (!isNaN(d.getTime())) {
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          return `${yyyy}-${mm}-${dd}`;
-        }
-        // Fallback parse common mm/dd/yyyy formats
-        const m = ts.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (m) {
-          const mm = String(m[1]).padStart(2, '0');
-          const dd = String(m[2]).padStart(2, '0');
-          const yyyy = m[3];
-          return `${yyyy}-${mm}-${dd}`;
-        }
-        return ts;
-      };
-
-      const isSheetFormat = headers.some(h => h.includes('timestamp') || h.includes('kategori'));
-
+      const lines = csvContent.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      this.students = [];
+      
       for (let i = 1; i < lines.length; i++) {
-        // Basic CSV split (Google CSV export uses commas and quotes) - remove surrounding quotes
-        const row = lines[i];
-        const values = row.split(',').map(v => v.replace(/^"|"$/g, '').trim());
-
-        if (isSheetFormat) {
-          // Find useful column indices
-          const idxTimestamp = headers.findIndex(h => h.includes('timestamp'));
-          const idxKategori = headers.findIndex(h => h.includes('kategori'));
-          // multiple "nama" columns possible - pick the first non-empty value among them
-          const namaIndices = headers.map((h, idx) => ({ h, idx })).filter(x => x.h.includes('nama')).map(x => x.idx);
-          const idxSurah = headers.findIndex(h => h.includes('surah'));
-          const idxTahap = headers.findIndex(h => h.includes('tahap'));
-          // Prefer exact mukasurat iqra / mukasurat quran columns when available
-          const idxMukaIqra = headers.findIndex(h => h.includes('mukasurat iqra'));
-          const idxMukaQuran = headers.findIndex(h => h.includes('mukasurat quran'));
-          const idxMukaGeneric = headers.findIndex(h => h.includes('mukasurat') || h.includes('muka'));
-
-          // Extract values safely
-          const timestamp = idxTimestamp >= 0 ? values[idxTimestamp] || '' : '';
-          const kategori = idxKategori >= 0 ? (values[idxKategori] || '') : '';
-          let name = '';
-          for (const ni of namaIndices) {
-            if (values[ni]) { name = values[ni]; break; }
+        const values = lines[i].split(',').map(v => v.trim());
+        if (values.length >= 4) {
+          // Handle stage: if it's a number, parse it; if it's a string (Surah name), keep as string
+          let stage = values[3];
+          if (!isNaN(stage)) {
+            stage = parseInt(stage) || 1;
           }
-          // If no name found in nama columns, try a sensible fallback (third column)
-          if (!name && values[2]) name = values[2];
-
-          const surah = idxSurah >= 0 ? (values[idxSurah] || '') : '';
-          const tahapRaw = idxTahap >= 0 ? (values[idxTahap] || '') : '';
-          const mukaIqraRaw = idxMukaIqra >= 0 ? (values[idxMukaIqra] || '') : (idxMukaGeneric >= 0 ? (values[idxMukaGeneric] || '') : '');
-          const mukaQuranRaw = idxMukaQuran >= 0 ? (values[idxMukaQuran] || '') : (idxMukaGeneric >= 0 ? (values[idxMukaGeneric] || '') : '');
-
-          const date = parseTimestampToDate(timestamp);
-
-          // Normalize category and build attendance record
-          const cat = (kategori || '').toLowerCase();
-          // normalize types to simple tokens: 'iqra', 'quran', 'mukadam'
-          let type = '';
-          let stage = '';
-          let pages = 0;
-
-          if (cat.includes('iqra')) {
-            type = 'iqra';
-            // tahap may contain 'iqra 2' or just a number; store stage as number when possible
-            const m = (tahapRaw || '').match(/(\d+)/);
-            stage = m ? parseInt(m[1]) : (tahapRaw || '').replace(/iqra\s*/i, '').trim() || '';
-            // mukasurat iqra column contains the page we want
-            pages = parseInt(mukaIqraRaw) || 0;
-          } else if (cat.includes('mukadam')) {
-            type = 'mukadam';
-            // For mukadam, the important value is the surah (string)
-            stage = surah || '';
-            // represent page as the surah name (pages field may remain 0)
-            pages = 0;
-          } else if (cat.includes('quran')) {
-            type = 'quran';
-            // For quran rows, prefer the 'mukasurat quran' column as the page number
-            pages = parseInt(mukaQuranRaw) || 0;
-            // If surah column present, keep it in stage for display
-            stage = surah || '';
-          } else {
-            // fallback heuristics
-            if (surah) {
-              type = 'quran';
-              stage = surah;
-              pages = parseInt(mukaQuranRaw || mukaIqraRaw) || 0;
-            } else if ((tahapRaw || '').toLowerCase().includes('iqra')) {
-              type = 'iqra';
-              const m = tahapRaw.match(/(\d+)/);
-              stage = m ? parseInt(m[1]) : tahapRaw;
-              pages = parseInt(mukaRaw) || 0;
-            } else {
-              type = (kategori || 'quran').toLowerCase();
-              stage = tahapRaw || surah || '';
-              pages = parseInt(mukaRaw) || 0;
-            }
-          }
-
-          if (name) {
-            students.push({
-              name: name,
-              date: date,
-              type: type,
-              stage: stage,
-              pages: pages
-            });
-          }
-
-        } else {
-          // Standard CSV name,date,type,stage,pages
-          const name = values[0] || '';
-          const date = values[1] || '';
-          const type = values[2] || '';
-          let stage = values[3] || '';
-          if (!isNaN(stage) && stage !== '') stage = parseInt(stage);
-          const pages = parseInt(values[4]) || 0;
-
-          if (name) {
-            students.push({ name, date, type, stage, pages });
-          }
+          
+          this.students.push({
+            name: values[0],
+            date: values[1],
+            type: values[2],
+            stage: stage,
+            pages: parseInt(values[4]) || 0
+          });
         }
       }
-
-      // Assign and sort by date
-      this.students = students.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // Sort by date
+      this.students.sort((a, b) => new Date(a.date) - new Date(b.date));
     },
     previousMonth() {
-      // Prevent navigating before Jan 2026
-      const year = this.currentDate.getFullYear();
-      const month = this.currentDate.getMonth();
-      if (year < 2026) return;
-      if (year === 2026 && month === 0) return;
       this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() - 1, 1);
     },
     nextMonth() {
       this.currentDate = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 1);
     },
     getAttendanceTypeClass(type) {
-      const t = (type || '').toString().toLowerCase();
-      if (t === 'iqra') return 'iqra';
-      if (t === 'quran') return 'quran';
-      if (t === 'mukadam') return 'mukadam'; // style mukadam with its own color
+      if (type === 'Iqra') return 'iqra';
+      if (type === 'Quran') return 'quran';
       return '';
     },
-
-    formatAttendanceLabel(type, stage, pages) {
-      const t = (type || '').toString().toLowerCase();
-      if (t === 'iqra') {
-        return stage ? `(iqra ${stage})` + (pages ? ` - ${pages}` : '') : (pages ? `halaman ${pages}` : 'iqra');
-      }
-      if (t === 'quran') {
-        // show "quran -123" as requested (note: include a space and dash)
-        return pages ? `(quran) - ${pages}` : (stage ? `(quran) - ${stage}` : '(quran)');
-      }
-      if (t === 'mukadam') {
-        return stage ? `(mukadam) - ${stage}` : '(mukadam)';
-      }
-      // fallback
-      return pages ? `${type} - ${pages}` : `${type}`;
-    },
     getStageText(type, stage) {
-      if (type === 'iqra') {
-        return stage ? `iqra ${stage}` : 'iqra';
-      } else if (type === 'quran') {
-        return stage ? `${stage}` : 'quran';
-      } else if (type === 'mukadam') {
-        return stage ? `mukadam (${stage})` : 'mukadam';
+      if (type === 'Iqra') {
+        return `Tahap ${stage}`;
+      } else if (type === 'Quran') {
+        if (stage === 1) return 'Juzuk 1-30';
+        // If stage is a Surah name (string), return it as is
+        if (isNaN(stage)) return `Surah ${stage}`;
+        return 'Juzuk 30';
       }
       return '';
     },
     getShortStageText(type, stage, pages = 0) {
-      // Display compact text used in calendar cells
-      if (type === 'iqra') {
-        // e.g. "iqra 2 - halaman 1" or "iqra 2" if no page
-        return pages > 0 ? `iqra ${stage} - ${pages}` : `iqra ${stage}`;
-      } else if (type === 'quran') {
-        // e.g. "quran - halaman 123" or "quran - Surah An-Naba" if stage provided
-        if (stage && typeof stage === 'string' && stage.trim() !== '') {
-          // If stage is a surah name but pages also provided, prefer pages for page number
-          return pages > 0 ? `quran - ${pages}` : `quran - ${stage}`;
+      if (type === 'Iqra') {
+        return pages > 0 ? `I${stage} - ${pages}` : `I${stage}`;
+      } else if (type === 'Quran') {
+        if (stage === 1) {
+          // Stage 1 = Juz 1-30, show page number
+          return pages > 0 ? `Q1 - ${pages}` : 'Q1';
+        } else {
+          // Stage 2 = Surah names, show surah name (not pages)
+          if (isNaN(stage)) {
+            return `Q2 - ${stage}`;
+          }
+          return pages > 0 ? `Q30 - ${pages}` : 'Q30';
         }
-        return pages > 0 ? `quran - ${pages}` : 'quran';
-      } else if (type === 'mukadam') {
-        // e.g. "mukadam - Surah An-Naba"
-        return stage ? `mukadam - ${stage}` : 'mukadam';
       }
       return '';
     },
     getPageDisplayText(type, stage, pages) {
-      // return the friendly page/surah display used in the student details
-      if (type === 'mukadam') {
-        return stage ? `Surah ${stage}` : '';
+      if (type === 'Quran' && isNaN(stage)) {
+        // Quran Stage 2 (Surah names) - show "surah ke-XX"
+        return `surah ke-${pages}`;
+      } else {
+        // Iqra and Quran Stage 1 - show "halaman XX"
+        return `halaman ${pages}`;
       }
-      // For iqra and quran, show halaman XX when pages available
-      return pages ? `halaman ${pages}` : '';
     },
     updateStatTypeStyles() {
       this.$nextTick(() => {
         const statTypes = document.querySelectorAll('.stat-type');
         statTypes.forEach(element => {
-          const txt = (element.textContent || '').toString().toLowerCase();
-          if (txt.includes('iqra')) {
+          if (element.textContent.includes('Iqra')) {
             element.style.background = 'rgba(76,175,80,0.3)';
             element.style.color = '#4CAF50';
-          } else if (txt.includes('quran')) {
+          } else if (element.textContent.includes('Quran')) {
             element.style.background = 'rgba(33,150,243,0.3)';
             element.style.color = '#2196F3';
-          } else if (txt.includes('mukadam')) {
-            element.style.background = 'rgba(255,152,0,0.25)';
-            element.style.color = '#FF9800';
           }
         });
       });
@@ -641,11 +497,6 @@ export default {
 
 .nav-btn:hover {
   background: rgba(255,255,255,0.3);
-}
-
-.nav-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .current-month {
@@ -785,11 +636,6 @@ export default {
   border-left: 3px solid #2196F3;
 }
 
-.attendance-item.mukadam {
-  background: rgba(255,152,0,0.25);
-  border-left: 3px solid #FF9800;
-}
-
 .more-indicator {
   font-size: 10px;
   color: rgba(255,255,255,0.6);
@@ -832,11 +678,6 @@ export default {
 .stat-card.quran {
   background: rgba(33,150,243,0.2);
   border-left: 4px solid #2196F3;
-}
-
-.stat-card.mukadam {
-  background: rgba(255,152,0,0.12);
-  border-left: 4px solid #FF9800;
 }
 
 .stat-card h4 {
