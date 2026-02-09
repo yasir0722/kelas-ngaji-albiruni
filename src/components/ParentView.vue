@@ -55,6 +55,8 @@
                     :key="record.name"
                     :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                     :title="`${record.name}: ${formatAttendanceLabel(record.type, record.stage, record.pages)}`"
+                    @click="showRecordDetail(record)"
+                    style="cursor: pointer;"
                   >
                     {{ record.name.split(' ')[0] }} {{ formatAttendanceLabel(record.type, record.stage, record.pages) }}
                   </div>
@@ -83,6 +85,8 @@
                   :key="record.name"
                   :class="['attendance-item', getAttendanceTypeClass(record.type)]"
                   :title="`${record.name}: ${formatAttendanceLabel(record.type, record.stage, record.pages)}`"
+                  @click="showRecordDetail(record)"
+                  style="cursor: pointer;"
                 >
                   {{ record.name.split(' ')[0] }} {{ formatAttendanceLabel(record.type, record.stage, record.pages) }}
                 </div>
@@ -133,6 +137,46 @@
     <div class="admin-link" v-if="isLocalhost">
       <a href="/kelas-ngaji-albiruni/admin" class="admin-button">🔧 Admin</a>
     </div>
+
+    <!-- Modal for record details -->
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>📋 Detail Kehadiran</h3>
+          <button class="modal-close" @click="closeModal">✕</button>
+        </div>
+        <div class="modal-body" v-if="selectedRecord">
+          <div class="detail-row">
+            <span class="detail-label">Nama:</span>
+            <span class="detail-value">{{ selectedRecord.name }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Tarikh:</span>
+            <span class="detail-value">{{ formatDate(selectedRecord.date) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Kategori:</span>
+            <span :class="['detail-value', 'badge', selectedRecord.type]">{{ selectedRecord.type }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedRecord.stage">
+            <span class="detail-label">{{ selectedRecord.type === 'iqra' ? 'Tahap' : 'Surah' }}:</span>
+            <span class="detail-value">{{ selectedRecord.stage }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedRecord.pages">
+            <span class="detail-label">Mukasurat:</span>
+            <span class="detail-value">{{ selectedRecord.pages }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedRecord.tahapMukasurat">
+            <span class="detail-label">Tahap Mukasurat:</span>
+            <span class="detail-value tahap-badge">{{ selectedRecord.tahapMukasurat }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedRecord.feedback">
+            <span class="detail-label">Feedback:</span>
+            <span class="detail-value feedback-text">{{ selectedRecord.feedback }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -147,11 +191,12 @@ export default {
       dayHeaders: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
       isLoading: true,
       error: null,
-      maxDisplay: 10
+      maxDisplay: 10,
+      showModal: false,
+      selectedRecord: null
     }
   },
   async mounted() {
-    await this.loadStudentList();
     await this.loadAttendanceData();
   },
   computed: {
@@ -271,51 +316,12 @@ export default {
     }
   },
   methods: {
-    async loadStudentList() {
-      try {
-        const response = await fetch('./student-list.csv');
-        if (!response.ok) {
-          throw new Error('Failed to load student list');
-        }
-        
-        const csvContent = await response.text();
-        const lines = csvContent.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-        
-        this.registeredStudents = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          if (values.length >= 3) {
-            this.registeredStudents.push({
-              name: values[0],
-              type: values[1],
-              stage: values[2]
-            });
-          }
-        }
-        
-        console.log('Student list loaded:', this.registeredStudents);
-      } catch (err) {
-        console.error('Error loading student list:', err);
-      }
-    },
-    isClassDay(date) {
-      const dayOfWeek = date.getDay();
-      return dayOfWeek === 1 || dayOfWeek === 2 || dayOfWeek === 3; // Monday, Tuesday, Wednesday
-    },
-    getAbsentStudents(attendanceData) {
-      const presentStudentNames = attendanceData.map(record => record.name);
-      return this.registeredStudents.filter(student => 
-        !presentStudentNames.includes(student.name)
-      ).sort((a, b) => a.name.localeCompare(b.name)); // Sort absent students alphabetically
-    },
     async loadAttendanceData() {
       try {
         this.isLoading = true;
         this.error = null;
 
-        // First try to load attendance from the shared Google Sheet (public CSV export)
+        // Load attendance from the shared Google Sheet (public CSV export)
         const sheetId = '1LLJvLI1cRVbdK7066hi-gJdOt--1Er9OcyyipOQdk7I';
         const gid = '0'; // change if the attendance is on a different tab
         const gsUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
@@ -334,7 +340,12 @@ export default {
 
         const csvContent = await response.text();
         this.parseCSV(csvContent);
+        
+        // Build registered students list from attendance data
+        this.buildRegisteredStudentsList();
+        
         console.log('Attendance data loaded successfully:', this.students);
+        console.log('Registered students derived from attendance:', this.registeredStudents);
 
       } catch (err) {
         this.error = 'Gagal memuat data kehadiran. Pastikan Google Sheet dibuka untuk umum atau file CSV lokal tersedia.';
@@ -344,13 +355,13 @@ export default {
       }
     },
     parseCSV(csvContent) {
-      // Robust CSV parsing for two formats:
-      // 1) Standard local CSV: name,date,type,stage,pages
-      // 2) Google Sheets export with headers like: Timestamp,kategori,nama,mukasurat,nama,surah,nama,tahap,mukasurat
+      // Parse Google Sheets CSV export with headers:
+      // "Timestamp","kategori","nama quran","mukasurat quran","nama mukadam","surah","nama iqra","tahap iqra","mukasurat iqra","tahap mukasurat quran","feedback quran","feedback mukadam","tahap mukasurat mukadam","feedback iqra","feedck quran"
+      
       const lines = csvContent.trim().split('\n').map(l => l.trim()).filter(Boolean);
       if (lines.length === 0) return;
 
-      const rawHeaders = lines[0].split(',').map(h => h.trim());
+      const rawHeaders = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
       const headers = rawHeaders.map(h => h.toLowerCase());
 
       const students = [];
@@ -376,114 +387,140 @@ export default {
         return ts;
       };
 
-      const isSheetFormat = headers.some(h => h.includes('timestamp') || h.includes('kategori'));
+      // Find column indices based on new headers
+      const idxTimestamp = headers.findIndex(h => h.includes('timestamp'));
+      const idxKategori = headers.findIndex(h => h.includes('kategori'));
+      const idxNamaQuran = headers.findIndex(h => h.includes('nama quran'));
+      const idxMukasuratQuran = headers.findIndex(h => h.includes('mukasurat quran'));
+      const idxNamaMukadam = headers.findIndex(h => h.includes('nama mukadam'));
+      const idxSurah = headers.findIndex(h => h.includes('surah'));
+      const idxNamaIqra = headers.findIndex(h => h.includes('nama iqra'));
+      const idxTahapIqra = headers.findIndex(h => h.includes('tahap iqra'));
+      const idxMukasuratIqra = headers.findIndex(h => h.includes('mukasurat iqra'));
+      const idxTahapMukasuratQuran = headers.findIndex(h => h.includes('tahap mukasurat quran'));
+      const idxFeedbackQuran = headers.findIndex(h => h.includes('feedback quran'));
+      const idxFeedbackMukadam = headers.findIndex(h => h.includes('feedback mukadam'));
+      const idxTahapMukasuratMukadam = headers.findIndex(h => h.includes('tahap mukasurat mukadam'));
+      const idxFeedbackIqra = headers.findIndex(h => h.includes('feedback iqra'));
 
       for (let i = 1; i < lines.length; i++) {
-        // Basic CSV split (Google CSV export uses commas and quotes) - remove surrounding quotes
         const row = lines[i];
         const values = row.split(',').map(v => v.replace(/^"|"$/g, '').trim());
 
-        if (isSheetFormat) {
-          // Find useful column indices
-          const idxTimestamp = headers.findIndex(h => h.includes('timestamp'));
-          const idxKategori = headers.findIndex(h => h.includes('kategori'));
-          // multiple "nama" columns possible - pick the first non-empty value among them
-          const namaIndices = headers.map((h, idx) => ({ h, idx })).filter(x => x.h.includes('nama')).map(x => x.idx);
-          const idxSurah = headers.findIndex(h => h.includes('surah'));
-          const idxTahap = headers.findIndex(h => h.includes('tahap'));
-          // Prefer exact mukasurat iqra / mukasurat quran columns when available
-          const idxMukaIqra = headers.findIndex(h => h.includes('mukasurat iqra'));
-          const idxMukaQuran = headers.findIndex(h => h.includes('mukasurat quran'));
-          const idxMukaGeneric = headers.findIndex(h => h.includes('mukasurat') || h.includes('muka'));
+        const timestamp = idxTimestamp >= 0 ? values[idxTimestamp] || '' : '';
+        const kategori = idxKategori >= 0 ? (values[idxKategori] || '') : '';
+        const date = parseTimestampToDate(timestamp);
 
-          // Extract values safely
-          const timestamp = idxTimestamp >= 0 ? values[idxTimestamp] || '' : '';
-          const kategori = idxKategori >= 0 ? (values[idxKategori] || '') : '';
-          let name = '';
-          for (const ni of namaIndices) {
-            if (values[ni]) { name = values[ni]; break; }
-          }
-          // If no name found in nama columns, try a sensible fallback (third column)
-          if (!name && values[2]) name = values[2];
+        const cat = (kategori || '').toLowerCase();
+        let name = '';
+        let type = '';
+        let stage = '';
+        let pages = 0;
+        let tahapMukasurat = '';
+        let feedback = '';
 
-          const surah = idxSurah >= 0 ? (values[idxSurah] || '') : '';
-          const tahapRaw = idxTahap >= 0 ? (values[idxTahap] || '') : '';
-          const mukaIqraRaw = idxMukaIqra >= 0 ? (values[idxMukaIqra] || '') : (idxMukaGeneric >= 0 ? (values[idxMukaGeneric] || '') : '');
-          const mukaQuranRaw = idxMukaQuran >= 0 ? (values[idxMukaQuran] || '') : (idxMukaGeneric >= 0 ? (values[idxMukaGeneric] || '') : '');
+        if (cat.includes('iqra')) {
+          type = 'iqra';
+          name = idxNamaIqra >= 0 ? (values[idxNamaIqra] || '') : '';
+          const tahapRaw = idxTahapIqra >= 0 ? (values[idxTahapIqra] || '') : '';
+          // tahapRaw may be "iqra 2" or just "2"
+          const m = tahapRaw.match(/(\d+)/);
+          stage = m ? parseInt(m[1]) : (tahapRaw || '').replace(/iqra\s*/i, '').trim() || '';
+          pages = idxMukasuratIqra >= 0 ? (parseInt(values[idxMukasuratIqra]) || 0) : 0;
+          feedback = idxFeedbackIqra >= 0 ? (values[idxFeedbackIqra] || '') : '';
+          
+        } else if (cat.includes('mukadam')) {
+          type = 'mukadam';
+          name = idxNamaMukadam >= 0 ? (values[idxNamaMukadam] || '') : '';
+          stage = idxSurah >= 0 ? (values[idxSurah] || '') : '';
+          pages = 0; // mukadam uses surah name in stage
+          tahapMukasurat = idxTahapMukasuratMukadam >= 0 ? (values[idxTahapMukasuratMukadam] || '') : '';
+          feedback = idxFeedbackMukadam >= 0 ? (values[idxFeedbackMukadam] || '') : '';
+          
+        } else if (cat.includes('quran')) {
+          type = 'quran';
+          name = idxNamaQuran >= 0 ? (values[idxNamaQuran] || '') : '';
+          pages = idxMukasuratQuran >= 0 ? (parseInt(values[idxMukasuratQuran]) || 0) : 0;
+          stage = ''; // quran uses page number
+          tahapMukasurat = idxTahapMukasuratQuran >= 0 ? (values[idxTahapMukasuratQuran] || '') : '';
+          feedback = idxFeedbackQuran >= 0 ? (values[idxFeedbackQuran] || '') : '';
+        }
 
-          const date = parseTimestampToDate(timestamp);
-
-          // Normalize category and build attendance record
-          const cat = (kategori || '').toLowerCase();
-          // normalize types to simple tokens: 'iqra', 'quran', 'mukadam'
-          let type = '';
-          let stage = '';
-          let pages = 0;
-
-          if (cat.includes('iqra')) {
-            type = 'iqra';
-            // tahap may contain 'iqra 2' or just a number; store stage as number when possible
-            const m = (tahapRaw || '').match(/(\d+)/);
-            stage = m ? parseInt(m[1]) : (tahapRaw || '').replace(/iqra\s*/i, '').trim() || '';
-            // mukasurat iqra column contains the page we want
-            pages = parseInt(mukaIqraRaw) || 0;
-          } else if (cat.includes('mukadam')) {
-            type = 'mukadam';
-            // For mukadam, the important value is the surah (string)
-            stage = surah || '';
-            // represent page as the surah name (pages field may remain 0)
-            pages = 0;
-          } else if (cat.includes('quran')) {
-            type = 'quran';
-            // For quran rows, prefer the 'mukasurat quran' column as the page number
-            pages = parseInt(mukaQuranRaw) || 0;
-            // If surah column present, keep it in stage for display
-            stage = surah || '';
-          } else {
-            // fallback heuristics
-            if (surah) {
-              type = 'quran';
-              stage = surah;
-              pages = parseInt(mukaQuranRaw || mukaIqraRaw) || 0;
-            } else if ((tahapRaw || '').toLowerCase().includes('iqra')) {
-              type = 'iqra';
-              const m = tahapRaw.match(/(\d+)/);
-              stage = m ? parseInt(m[1]) : tahapRaw;
-              pages = parseInt(mukaRaw) || 0;
-            } else {
-              type = (kategori || 'quran').toLowerCase();
-              stage = tahapRaw || surah || '';
-              pages = parseInt(mukaRaw) || 0;
-            }
-          }
-
-          if (name) {
-            students.push({
-              name: name,
-              date: date,
-              type: type,
-              stage: stage,
-              pages: pages
-            });
-          }
-
-        } else {
-          // Standard CSV name,date,type,stage,pages
-          const name = values[0] || '';
-          const date = values[1] || '';
-          const type = values[2] || '';
-          let stage = values[3] || '';
-          if (!isNaN(stage) && stage !== '') stage = parseInt(stage);
-          const pages = parseInt(values[4]) || 0;
-
-          if (name) {
-            students.push({ name, date, type, stage, pages });
-          }
+        if (name && date) {
+          students.push({
+            name: this.capitalizeName(name),
+            date: date,
+            type: type,
+            stage: stage,
+            pages: pages,
+            tahapMukasurat: tahapMukasurat,
+            feedback: feedback
+          });
         }
       }
 
-      // Assign and sort by date
+      // Sort by date
       this.students = students.sort((a, b) => new Date(a.date) - new Date(b.date));
+    },
+    
+    buildRegisteredStudentsList() {
+      // Build the registered students list from attendance data
+      // Get unique students with their most recent type and stage
+      const studentMap = {};
+      
+      this.students.forEach(record => {
+        if (!studentMap[record.name]) {
+          studentMap[record.name] = {
+            name: record.name,
+            type: record.type,
+            stage: record.stage,
+            latestDate: record.date
+          };
+        } else {
+          // Update with latest record
+          if (record.date >= studentMap[record.name].latestDate) {
+            studentMap[record.name].latestDate = record.date;
+            studentMap[record.name].type = record.type;
+            studentMap[record.name].stage = record.stage;
+          }
+        }
+      });
+      
+      this.registeredStudents = Object.values(studentMap).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    isClassDay(date) {
+      const dayOfWeek = date.getDay();
+      return dayOfWeek === 1 || dayOfWeek === 2 || dayOfWeek === 3; // Monday, Tuesday, Wednesday
+    },
+    
+    getAbsentStudents(attendanceData) {
+      const presentLower = attendanceData.map(record => (record.name || '').toString().toLowerCase());
+      return this.registeredStudents.filter(student => 
+        !presentLower.includes((student.name || '').toString().toLowerCase())
+      ).sort((a, b) => a.name.localeCompare(b.name)); // Sort absent students alphabetically
+    },
+
+    capitalizeName(name) {
+      if (!name) return '';
+      return name.split(' ').map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(' ');
+    },
+    showRecordDetail(record) {
+      this.selectedRecord = record;
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+      this.selectedRecord = null;
+    },
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      const malayMonths = [
+        'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun',
+        'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'
+      ];
+      const malayDays = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
+      return `${malayDays[date.getDay()]}, ${date.getDate()} ${malayMonths[date.getMonth()]} ${date.getFullYear()}`;
     },
     previousMonth() {
       // Prevent navigating before Jan 2026
@@ -926,6 +963,147 @@ export default {
 .admin-button:hover {
   background: rgba(255,255,255,0.3);
   transform: translateY(-2px);
+}
+
+.admin-button:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+  border-radius: 16px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.modal-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: rgba(255,255,255,0.2);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: bold;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+}
+
+.detail-value {
+  color: white;
+  font-size: 16px;
+  text-align: right;
+  max-width: 60%;
+}
+
+.detail-value.badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.detail-value.badge.iqra {
+  background: rgba(76,175,80,0.3);
+  color: #4CAF50;
+  border: 1px solid #4CAF50;
+}
+
+.detail-value.badge.quran {
+  background: rgba(33,150,243,0.3);
+  color: #2196F3;
+  border: 1px solid #2196F3;
+}
+
+.detail-value.badge.mukadam {
+  background: rgba(255,152,0,0.25);
+  color: #FF9800;
+  border: 1px solid #FF9800;
+}
+
+.detail-value.tahap-badge {
+  background: rgba(255,193,7,0.2);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #FFC107;
+  border: 1px solid rgba(255,193,7,0.5);
+}
+
+.detail-value.feedback-text {
+  background: rgba(255,255,255,0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-style: italic;
+  color: rgba(255,255,255,0.9);
+  max-width: 100%;
+  margin-top: 8px;
+  text-align: left;
 }
 
 @media (max-width: 768px) {
